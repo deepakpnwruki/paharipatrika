@@ -75,12 +75,12 @@ export const metadata: Metadata = {
 
 // Add Organization and WebSite structured data
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const revalidate = Number(process.env.REVALIDATE_SECONDS ?? 300);
+  const revalidateSeconds = Number(process.env.REVALIDATE_SECONDS ?? 300);
 
   const catsData = await wpFetch<{ categories:{ nodes:{ name:string; slug:string }[] } }>(
     CATEGORIES_QUERY, 
     { first: 20 }, 
-    revalidate, 
+    revalidateSeconds, 
     'layout-cats'
   );
   const categories = catsData?.categories?.nodes || [];

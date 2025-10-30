@@ -15,7 +15,7 @@ import Image from 'next/image';
 
 type ParamPromise = Promise<{ slug?: string[] }>;
 
-export const revalidate = Number(process.env.REVALIDATE_SECONDS ?? 300);
+export const revalidate = 300;
 export const dynamicParams = true;
 
 /* ---------- helpers ---------- */

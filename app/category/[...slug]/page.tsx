@@ -35,8 +35,9 @@ interface CategoryData {
 
 export const revalidate = 300;
 
-export default async function CategoryPage({ params }: { params: { slug: string[] } }) {
-  const slug = params.slug[params.slug.length - 1]; // Get last segment
+export default async function CategoryPage({ params }: { params: Promise<{ slug: string[] }> }) {
+  const { slug: slugArray } = await params;
+  const slug = slugArray[slugArray.length - 1]; // Get last segment
   const data = await wpFetch<CategoryData>(CATEGORY_BY_SLUG_QUERY, { slug });
   const category = data?.categories?.nodes?.[0];
 

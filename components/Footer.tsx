@@ -3,12 +3,11 @@ import Link from 'next/link';
 import { wpFetch } from '../lib/graphql';
 import { PAGES_QUERY } from '../lib/queries';
 
-export const revalidate = Number(process.env.REVALIDATE_SECONDS ?? 300);
-
 export default async function Footer() {
   let pages: any[] = [];
   try {
-    const data = await wpFetch<any>(PAGES_QUERY, { first: 10 }, revalidate, 'footer-pages');
+    const revalidateSeconds = Number(process.env.REVALIDATE_SECONDS ?? 300);
+    const data = await wpFetch<any>(PAGES_QUERY, { first: 10 }, revalidateSeconds, 'footer-pages');
     pages = data?.pages?.nodes || [];
   } catch (e) {
     console.error('Error fetching footer pages:', e);

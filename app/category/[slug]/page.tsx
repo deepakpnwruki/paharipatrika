@@ -5,7 +5,7 @@ import { wpFetch } from '../../../lib/graphql';
 import { CATEGORY_BY_SLUG_QUERY } from '../../../lib/queries';
 import './category.css';
 
-export const revalidate = Number(process.env.REVALIDATE_SECONDS ?? 300);
+export const revalidate = 300;
 
 type Props = {
   params: Promise<{ slug: string }>;

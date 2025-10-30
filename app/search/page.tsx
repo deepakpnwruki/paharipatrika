@@ -2,16 +2,18 @@ import { wpFetch } from '../../lib/graphql';
 import PostCard from '../../components/PostCard';
 import { POSTS_QUERY } from '../../lib/queries';
 
-export const revalidate = Number(process.env.REVALIDATE_SECONDS ?? 300);
+export const revalidate = 300;
 
-function getQueryParam(searchParams?: { [key:string]: string | string[] | undefined }){
-  if (!searchParams) return '';
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
+
+function getQueryParam(searchParams: { [key:string]: string | string[] | undefined }){
   const q = searchParams['q'];
   return Array.isArray(q) ? q[0] || '' : (q || '');
 }
 
-export default async function SearchPage({ searchParams }: { searchParams?: { [key:string]: string | string[] | undefined } }){
-  const q = getQueryParam(searchParams);
+export default async function SearchPage({ searchParams }: { searchParams: SearchParams }){
+  const resolvedParams = await searchParams;
+  const q = getQueryParam(resolvedParams);
   let posts: any[] = [];
   if (q) {
     // fallback: use POSTS_QUERY and filter client-side minimal (WPGraphQL has search arg but we keep deps minimal)
