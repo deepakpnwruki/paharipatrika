@@ -1,0 +1,6 @@
+/* Minimal compatibility. Kept to avoid import errors. */
+
+@media (max-width: 768px) {
+  /* If any legacy header exists, hide to prevent duplicates */
+  .article-hero-m { display: none !important; }
+}

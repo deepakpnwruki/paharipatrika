@@ -1,0 +1,37 @@
+import { wpFetch } from '../../lib/graphql';
+import PostCard from '../../components/PostCard';
+import { POSTS_QUERY } from '../../lib/queries';
+
+export const revalidate = Number(process.env.REVALIDATE_SECONDS ?? 300);
+
+function getQueryParam(searchParams?: { [key:string]: string | string[] | undefined }){
+  if (!searchParams) return '';
+  const q = searchParams['q'];
+  return Array.isArray(q) ? q[0] || '' : (q || '');
+}
+
+export default async function SearchPage({ searchParams }: { searchParams?: { [key:string]: string | string[] | undefined } }){
+  const q = getQueryParam(searchParams);
+  let posts: any[] = [];
+  if (q) {
+    // fallback: use POSTS_QUERY and filter client-side minimal (WPGraphQL has search arg but we keep deps minimal)
+    const data = await wpFetch<{ posts: any }>(POSTS_QUERY, { first: 20 }, revalidate, `searchseed`);
+    const nodes = data.posts?.nodes ?? [];
+    posts = nodes.filter((n:any)=> (n.title||'').toLowerCase().includes(q.toLowerCase()));
+  }
+  return (
+    <div className="container">
+      <h1>Search</h1>
+      <form action="/search" method="get" style={{display:'flex', gap:'0.5rem', marginBottom:'1rem'}}>
+        <input name="q" defaultValue={q} placeholder="Search articles..." style={{flex:1, padding:'0.6rem 0.75rem', border:'1px solid #e5e7eb', borderRadius:8}} />
+        <button type="submit" style={{padding:'0.6rem 0.9rem', border:'1px solid #e5e7eb', background:'#111', color:'#fff', borderRadius:8, cursor:'pointer'}}>Search</button>
+      </form>
+      {!q && <p className="meta">Tip: Try searching for a headline or keyword.</p>}
+      {q && <p className="meta">Showing results for: <strong>{q}</strong></p>}
+      <section className="card" style={{padding:'0.5rem 0'}}>
+        {q && posts.length === 0 && <p style={{padding:'1rem'}}>No results.</p>}
+        {posts.map((p:any)=> <PostCard key={p.id} post={p} />)}
+      </section>
+    </div>
+  );
+}
