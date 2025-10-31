@@ -1,0 +1,55 @@
+import { NextResponse } from 'next/server';
+import { wpFetch } from '../../../lib/graphql';
+
+const HOMEPAGE_POSTS_QUERY = `
+  query HomepagePosts {
+    posts(first: 10) {
+      nodes {
+        title
+        slug
+        uri
+        date
+        excerpt
+        featuredImage {
+          node {
+            sourceUrl
+            altText
+          }
+        }
+        categories {
+          nodes {
+            name
+            slug
+          }
+        }
+        author {
+          node {
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const revalidate = 300;
+
+export async function GET() {
+  try {
+    const data = await wpFetch<{ posts: { nodes: any[] } }>(
+      HOMEPAGE_POSTS_QUERY,
+      {},
+      revalidate
+    );
+    
+    return NextResponse.json({
+      posts: data?.posts?.nodes || []
+    });
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch posts', posts: [] },
+      { status: 500 }
+    );
+  }
+}

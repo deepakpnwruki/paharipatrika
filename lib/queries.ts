@@ -34,8 +34,15 @@ export const NODE_BY_URI_QUERY = `
           node {
             name
             description
+            slug
+            url
             avatar {
               url
+            }
+            ... on User {
+              linkedin: databaseId
+              facebook: databaseId
+              twitter: databaseId
             }
           }
         }
@@ -160,8 +167,15 @@ export const POST_BY_URI_QUERY = `
         node {
           name
           description
+          slug
+          url
           avatar {
             url
+          }
+          ... on User {
+            linkedin: databaseId
+            facebook: databaseId
+            twitter: databaseId
           }
         }
       }
@@ -203,14 +217,20 @@ export const PAGE_BY_URI_QUERY = `
 
 // Add: used by app/category/[slug]/page.tsx
 export const CATEGORY_BY_SLUG_QUERY = `
-  query CategoryBySlug($slug: ID!) {
+  query CategoryBySlug($slug: ID!, $first: Int = 20, $after: String) {
     category(id: $slug, idType: SLUG) {
       id
       name
       description
       slug
       uri
-      posts(first: 20) {
+      posts(first: $first, after: $after) {
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
         nodes {
           title
           excerpt
@@ -275,6 +295,43 @@ export const LATEST_POSTS_QUERY = `
         author { node { name } }
         featuredImage { node { sourceUrl altText } }
         categories(first: 1) { nodes { name slug } }
+      }
+    }
+  }
+`;
+
+export const TAG_BY_SLUG_QUERY = `
+  query TagBySlug($slug: ID!) {
+    tag(id: $slug, idType: SLUG) {
+      id
+      name
+      description
+      slug
+      uri
+      posts(first: 100) {
+        nodes {
+          title
+          excerpt
+          slug
+          date
+          uri
+          author { node { name } }
+          featuredImage {
+            node {
+              sourceUrl
+              altText
+              mediaDetails {
+                sizes { name sourceUrl width height }
+              }
+            }
+          }
+          categories {
+            nodes {
+              name
+              slug
+            }
+          }
+        }
       }
     }
   }

@@ -3,27 +3,15 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { wpFetch } from '../../../lib/graphql';
 import { CATEGORY_BY_SLUG_QUERY } from '../../../lib/queries';
-import './category.css';
+import './category-page.css';
 
 export const revalidate = 300;
 
 type Props = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ after?: string }>; // use 'after' for cursor-based pagination
 };
 
-function formatDate(dateString: string) {
-  try {
-    return new Intl.DateTimeFormat('hi-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }).format(new Date(dateString));
-  } catch {
-    return dateString;
-  }
-}
-
-// Mobile meta like: "Author • 2 hrs ago"
 function timeAgo(dateString?: string) {
   if (!dateString) return '';
   const then = new Date(dateString).getTime();
@@ -85,12 +73,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function CategoryPage({ params }: Props) {
+export default async function CategoryPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { after } = await searchParams;
+  const postsPerPage = 10;
 
   const data = await wpFetch<{ category: any }>(
     CATEGORY_BY_SLUG_QUERY,
-    { slug },
+    { slug, first: postsPerPage, after: after || null },
     revalidate
   );
 
@@ -100,6 +90,7 @@ export default async function CategoryPage({ params }: Props) {
 
   const category = data.category;
   const posts = category.posts?.nodes ?? [];
+  const pageInfo = category.posts?.pageInfo;
   const siteUrl = (process.env.SITE_URL || '').replace(/\/$/, '');
   const firstPost = posts[0];
   const morePosts = posts.slice(1);
@@ -144,135 +135,85 @@ export default async function CategoryPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: structuredData }}
       />
       
-      {/* Mobile-first category template */}
-      <section className="catm" aria-label="mobile category" >
-        <div className="catm-wrap">
-          <div className="catm-bc">
-            <Link href="/" className="catm-bc-home">Home</Link>
-            <span className="catm-bc-sep">/</span>
-            <span className="catm-bc-current">{category.name}</span>
-          </div>
-          <h1 className="catm-title">LATEST {category.name?.toUpperCase()} NEWS</h1>
-
-          {firstPost && (
-            <article className="catm-hero">
-              {firstPost?.featuredImage?.node?.sourceUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  className="catm-hero-img"
-                  src={firstPost.featuredImage.node.sourceUrl}
-                  alt={firstPost.featuredImage.node.altText || firstPost.title}
-                />
-              )}
-              <Link href={firstPost.uri || `/${firstPost.slug}`} className="catm-hero-link">
-                <h2 className="catm-hero-title">{firstPost.title}</h2>
-                <div className="catm-meta">
-                  <span className="catm-author">{firstPost?.author?.node?.name || 'Staff'}</span>
-                  <span aria-hidden className="dot">•</span>
-                  <time className="catm-time" dateTime={firstPost.date}>{timeAgo(firstPost.date)}</time>
-                </div>
-              </Link>
-            </article>
-          )}
-
-          <div className="catm-list" role="list">
-            {morePosts.map((p: any) => (
-              <Link role="listitem" href={p.uri || `/${p.slug}`} className="catm-item" key={p.slug}>
-                {p?.featuredImage?.node?.sourceUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    className="catm-thumb"
-                    src={p.featuredImage.node.sourceUrl}
-                    alt={p.featuredImage.node.altText || p.title}
-                    loading="lazy"
-                  />
-                )}
-                <div className="catm-item-body">
-                  <h3 className="catm-item-title">{p.title}</h3>
-                  <div className="catm-meta small">
-                    <span className="catm-author">{p?.author?.node?.name || 'Staff'}</span>
-                    <span aria-hidden className="dot">•</span>
-                    <time className="catm-time" dateTime={p.date}>{timeAgo(p.date)}</time>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <main className="category-page">
-        <nav className="breadcrumb-nav" aria-label="breadcrumb">
-          <div className="container">
-            <ol className="breadcrumb-list">
-              <li>
-                <Link href="/">होम</Link>
-              </li>
-              <li aria-current="page">{category.name}</li>
-            </ol>
-          </div>
-        </nav>
+        <div className="category-container">
+          {/* Breadcrumb */}
+          <nav className="cat-breadcrumb" aria-label="breadcrumb">
+            <Link href="/" className="cat-breadcrumb__link">Home</Link>
+            <span className="cat-breadcrumb__sep">/</span>
+            <span className="cat-breadcrumb__current">{category.name}</span>
+          </nav>
 
-        <header className="category-header">
-          <div className="container">
-            <h1 className="category-title">{category.name}</h1>
-            {category.description && (
-              <p className="category-description">{category.description}</p>
-            )}
-            <div className="category-meta">
-              <span className="post-count">{posts.length} लेख</span>
+          {/* Page Title with Red Line */}
+          <div className="cat-header">
+            <h1 className="cat-header__title">{category.name.toUpperCase()}</h1>
+            <div className="cat-header__line"></div>
+          </div>
+
+          {posts.length === 0 ? (
+            <div className="cat-no-posts">
+              <p>No posts found in this category.</p>
             </div>
-          </div>
-        </header>
-
-        <section className="category-content">
-          <div className="container">
-            {posts.length === 0 ? (
-              <div className="no-posts">
-                <p>इस श्रेणी में कोई पोस्ट नहीं मिली।</p>
-              </div>
-            ) : (
-              <div className="posts-grid">
-                {posts.map((post: any, index: number) => (
-                  <article key={post.slug} className={`post-card ${index === 0 ? 'featured' : ''}`}>
-                    <Link href={post.uri || `/${post.slug}`} className="post-link">
+          ) : (
+            <div className="cat-posts">
+              {posts.map((post: any, index: number) => {
+                const isFirst = index === 0;
+                return (
+                  <article key={post.slug} className={`cat-post ${isFirst ? 'cat-post--featured' : ''}`}>
+                    <Link href={post.uri || `/${post.slug}`} className="cat-post__link">
                       {post.featuredImage?.node?.sourceUrl && (
-                        <div className="post-image">
+                        <div className="cat-post__image">
                           <img
                             src={post.featuredImage.node.sourceUrl}
                             alt={post.featuredImage.node.altText || post.title}
                             loading={index < 3 ? 'eager' : 'lazy'}
-                            width={800}
-                            height={450}
                           />
                         </div>
                       )}
-                      <div className="post-content">
-                        <div className="post-meta">
-                          {post.categories?.nodes?.[0]?.name && (
-                            <span className="post-category">{post.categories.nodes[0].name}</span>
-                          )}
-                          <time className="post-date" dateTime={post.date}>
-                            {formatDate(post.date)}
+                      <div className="cat-post__content">
+                        <h2 className="cat-post__title">{post.title}</h2>
+                        <div className="cat-post__meta">
+                          <span className="cat-post__author">
+                            {post?.author?.node?.name || 'Staff'}
+                          </span>
+                          <span className="cat-post__dot">•</span>
+                          <time className="cat-post__time" dateTime={post.date}>
+                            {timeAgo(post.date)}
                           </time>
                         </div>
-                        <h2 className="post-title">{post.title}</h2>
-                        {post.excerpt && (
-                          <div 
-                            className="post-excerpt"
-                            dangerouslySetInnerHTML={{ 
-                              __html: post.excerpt.replace(/<[^>]*>/g, '').substring(0, 150) + '...' 
-                            }} 
-                          />
-                        )}
                       </div>
                     </Link>
                   </article>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {(pageInfo?.hasPreviousPage || pageInfo?.hasNextPage) && (
+            <nav className="cat-pagination" aria-label="Pagination">
+              {pageInfo?.hasPreviousPage && (
+                <Link
+                  href={`${category.uri}`}
+                  className="cat-pagination__btn cat-pagination__prev"
+                  aria-label="Previous page"
+                >
+                  ‹
+                </Link>
+              )}
+              <span className="cat-pagination__current-page">Page</span>
+              {pageInfo?.hasNextPage && (
+                <Link
+                  href={`${category.uri}?after=${encodeURIComponent(pageInfo.endCursor)}`}
+                  className="cat-pagination__btn cat-pagination__next"
+                  aria-label="Next page"
+                >
+                  ›
+                </Link>
+              )}
+            </nav>
+          )}
+        </div>
       </main>
     </>
   );

@@ -1,0 +1,346 @@
+/* Tag Page Styles */
+.es-tag-page {
+  width: 100%;
+  background: #f8f9fa;
+}
+
+/* Header Section */
+.es-tag-header {
+  width: 100%;
+  background: #000000;
+  padding: 50px 0;
+  text-align: center;
+}
+
+.es-tag-header__inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.es-tag-header__title {
+  font-size: 42px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Content Section */
+.es-tag-content {
+  width: 100%;
+  background: #f8f9fa;
+  padding: 50px 0 80px;
+}
+
+.es-tag-content__inner {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.es-tag-content__subtitle {
+  font-size: 24px;
+  font-weight: 900;
+  color: #2c3e50;
+  margin: 0 0 6px 0;
+  letter-spacing: 0.5px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.es-tag-content__desc {
+  font-size: 14px;
+  font-style: italic;
+  color: #7f8c8d;
+  margin: 0 0 2px 0;
+  font-weight: 400;
+}
+
+.es-tag-content__date {
+  font-size: 13px;
+  color: #e74c3c;
+  font-style: italic;
+  margin: 0 0 35px 0;
+  font-weight: 500;
+}
+
+/* Posts Grid */
+.es-tag-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 35px;
+}
+
+/* Individual Post Card */
+.es-tag-post {
+  background: #ffffff;
+  position: relative;
+  padding: 28px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
+}
+
+.es-tag-post:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.es-tag-post:first-child {
+  padding: 32px;
+}
+
+.es-tag-post__link {
+  display: flex;
+  text-decoration: none;
+  color: inherit;
+  gap: 0;
+  position: relative;
+}
+
+/* Red accent line for first post - HIDDEN */
+.es-tag-post__accent {
+  display: none;
+}
+
+/* Featured (First) Post - Vertical Layout */
+.es-tag-post--featured .es-tag-post__link {
+  flex-direction: column;
+  gap: 18px;
+}
+
+.es-tag-post--featured .es-tag-post__image {
+  width: 100%;
+  padding-bottom: 50%; 
+  order: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.es-tag-post--featured .es-tag-post__content {
+  order: 2;
+  padding: 0;
+}
+
+.es-tag-post--featured .es-tag-post__title {
+  font-size: 26px;
+  line-height: 1.3;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.es-tag-post--featured .es-tag-post__author {
+  font-size: 14px;
+}
+
+/* Regular Posts - Horizontal Layout (Image on RIGHT) */
+.es-tag-post:not(.es-tag-post--featured) .es-tag-post__link {
+  flex-direction: row;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.es-tag-post:not(.es-tag-post--featured) .es-tag-post__content {
+  flex: 1;
+  order: 1;
+  padding: 0;
+  padding-top: 0;
+}
+
+.es-tag-post:not(.es-tag-post--featured) .es-tag-post__image {
+  flex-shrink: 0;
+  width: 220px;
+  height: 145px;
+  order: 2;
+  padding-bottom: 0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Badge Top (NEWS) */
+.es-tag-post__badge-top {
+  display: inline-block;
+  background: #eb5757;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+/* Image Container */
+.es-tag-post__image {
+  position: relative;
+  background: #f0f0f0;
+  overflow: hidden;
+}
+
+.es-tag-post__image img {
+  object-fit: cover;
+}
+
+/* Content Area */
+.es-tag-post__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.es-tag-post__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.35;
+  margin: 0 0 10px 0;
+  transition: color 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.es-tag-post__link:hover .es-tag-post__title {
+  color: #e74c3c;
+}
+
+.es-tag-post__author {
+  font-size: 13px;
+  color: #95a5a6;
+  margin: 0;
+  font-weight: 400;
+}
+
+.es-tag-empty {
+  text-align: center;
+  font-size: 18px;
+  color: #7f8c8d;
+  padding: 60px 20px;
+  font-style: italic;
+}
+
+/* Mobile Specific */
+@media (max-width: 767px) {
+  .es-tag-header {
+    padding: 35px 0;
+  }
+  
+  .es-tag-header__title {
+    font-size: 28px;
+    letter-spacing: 2px;
+  }
+  
+  .es-tag-content {
+    padding: 35px 0 50px;
+  }
+  
+  .es-tag-content__inner {
+    padding: 0 16px;
+  }
+  
+  .es-tag-content__subtitle {
+    font-size: 20px;
+  }
+  
+  .es-tag-post {
+    padding: 20px;
+  }
+  
+  .es-tag-post:first-child {
+    padding: 20px;
+  }
+  
+  .es-tag-post__accent {
+    left: 0;
+    height: 40px;
+  }
+  
+  .es-tag-post:not(.es-tag-post--featured) .es-tag-post__link {
+    gap: 14px;
+  }
+  
+  .es-tag-post:not(.es-tag-post--featured) .es-tag-post__image {
+    width: 140px;
+    height: 100px;
+  }
+  
+  .es-tag-post--featured .es-tag-post__title {
+    font-size: 20px;
+  }
+  
+  .es-tag-post__title {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  
+  .es-tag-post__badge-top {
+    font-size: 9px;
+    padding: 4px 12px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+  }
+  
+  .es-tag-post__author {
+    font-size: 12px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .es-tag-header {
+    padding: 45px 0;
+  }
+  
+  .es-tag-header__title {
+    font-size: 38px;
+  }
+  
+  .es-tag-content__subtitle {
+    font-size: 22px;
+  }
+  
+  .es-tag-post--featured .es-tag-post__title {
+    font-size: 24px;
+  }
+  
+  .es-tag-post__title {
+    font-size: 18px;
+  }
+  
+  .es-tag-post:not(.es-tag-post--featured) .es-tag-post__image {
+    width: 200px;
+    height: 135px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .es-tag-header {
+    padding: 50px 0;
+  }
+  
+  .es-tag-header__title {
+    font-size: 42px;
+  }
+  
+  .es-tag-content {
+    padding: 50px 0 80px;
+  }
+  
+  .es-tag-content__subtitle {
+    font-size: 24px;
+  }
+  
+  .es-tag-post--featured .es-tag-post__title {
+    font-size: 26px;
+  }
+  
+  .es-tag-post__title {
+    font-size: 20px;
+  }
+  
+  .es-tag-post:not(.es-tag-post--featured) .es-tag-post__image {
+    width: 220px;
+    height: 145px;
+  }
+}

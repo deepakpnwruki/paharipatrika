@@ -1,7 +1,9 @@
 import Link from 'next/link';
-export default function Breadcrumbs({ items }: { items: { name: string; href?: string }[] }) {
+type Crumb = { name: string; href?: string };
+export default function Breadcrumbs({ items, className }: { items: Crumb[]; className?: string }) {
+  const cls = ['meta', className].filter(Boolean).join(' ');
   return (
-    <nav aria-label="Breadcrumb" className="meta" style={{margin:'0.5rem 0 1rem'}}>
+    <nav aria-label="Breadcrumb" className={cls} style={{ margin: '0.5rem 0 1rem' }}>
       {items.map((it, i) => (
         <span key={i}>
           {it.href ? <Link href={it.href}>{it.name}</Link> : <span>{it.name}</span>}
