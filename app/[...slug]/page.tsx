@@ -241,7 +241,7 @@ async function resolveNode(segments?: string[]) {
               <Link href={`/${p.slug}`} key={p.slug} className="es-card">
                 {p.featuredImage?.node?.sourceUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.featuredImage.node.sourceUrl} alt={p.featuredImage.node.altText || p.title} loading="lazy" />
+                  <img src={p.featuredImage.node.sourceUrl} alt={p.featuredImage.node.altText || p.title} />
                 )}
                 <h3 className="es-card__title">{p.title}</h3>
                 {p.excerpt && <div className="es-card__excerpt" dangerouslySetInnerHTML={{ __html: p.excerpt }} />}

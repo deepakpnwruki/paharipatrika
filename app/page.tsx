@@ -49,7 +49,7 @@ function timeAgo(dateString?: string) {
 
 export default function Home() {
   const [posts, setPosts] = useState<PostNode[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Removed loading state
 
   useEffect(() => {
     async function fetchPosts() {
@@ -61,20 +61,12 @@ export default function Home() {
         }
       } catch (error) {
         console.error('Error fetching posts:', error);
-      } finally {
-        setLoading(false);
       }
     }
     fetchPosts();
   }, []);
 
-  if (loading) {
-    return (
-      <main style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <p>Loading...</p>
-      </main>
-    );
-  }
+  // Removed loader UI
 
   const featured = posts[0];
   const trio = posts.slice(1, 4);

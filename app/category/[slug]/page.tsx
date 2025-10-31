@@ -166,7 +166,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                           <img
                             src={post.featuredImage.node.sourceUrl}
                             alt={post.featuredImage.node.altText || post.title}
-                            loading={index < 3 ? 'eager' : 'lazy'}
+                            // loading removed
                           />
                         </div>
                       )}
