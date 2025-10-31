@@ -193,7 +193,7 @@
 /* Media with halftone dots and red corner accent */
 .hb-media {
   position: relative;
-  background: #121215;
+  background: #000;
   aspect-ratio: 16/11;
   overflow: hidden;
 }

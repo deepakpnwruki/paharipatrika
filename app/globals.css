@@ -338,11 +338,13 @@ header.sticky {
 
   .en-nav-menu {
     padding: 0 0.5rem;
+    background: #fff;
   }
 
   .en-nav-menu a {
     padding: 0.75rem 0.75rem;
     font-size: 0.875rem;
+  color: #222 !important;
   }
 
   .en-brand-text {

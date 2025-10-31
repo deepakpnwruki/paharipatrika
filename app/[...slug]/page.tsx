@@ -42,96 +42,100 @@ function absoluteUrl(url?: string, site?: string) {
     const base = (site || process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
     const path = url.startsWith('/') ? url : `/${url}`;
     return `${base}${path}`;
-  }
-  function plainText(html?: string, max = 160) {
-    const text = (html || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-    return text.slice(0, max);
-  }
-  function readingMinutesFromHtml(html?: string) {
-    const text = (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    const words = text ? text.split(/\s+/).length : 0;
-    return Math.max(1, Math.round(words / 200));
-  }
-  function candidates(segments?: string[]) {
-    if (!segments || segments.length === 0) return [];
-    const joined = '/' + segments.join('/');
-    const set = new Set<string>();
-    const addForms = (s: string) => {
-      set.add(s);
-      set.add(s.endsWith('/') ? s : s + '/');
-    };
-    addForms(joined);
-    addForms(joined.toLowerCase());
-    try {
-      const dec = decodeURIComponent(joined);
-      addForms(dec);
-      addForms(dec.toLowerCase());
-    } catch {}
-    return Array.from(set);
-  }
-  async function resolveNode(segments?: string[]) {
-    const cs = candidates(segments);
+}
 
-    for (const uri of cs) {
-      try {
-        const data = await wpFetch<{ nodeByUri: any }>(
-          NODE_BY_URI_QUERY,
-          { uri },
-          revalidate,
-          `node:${uri}`
-        );
-        if (data?.nodeByUri) {
-          const n = data.nodeByUri;
-          return { node: n, isPost: n.__typename === 'Post' };
-        }
-      } catch {}
-    }
-    for (const uri of cs) {
-      try {
-        const p = await wpFetch<{ post: any }>(
-          POST_BY_URI_QUERY,
-          { uri },
-          revalidate,
-          `post:${uri}`
-        );
-        if (p?.post) return { node: p.post, isPost: true };
-      } catch {}
-      try {
-        const pg = await wpFetch<{ page: any }>(
-          PAGE_BY_URI_QUERY,
-          { uri },
-          revalidate,
-          `page:${uri}`
-        );
-        if (pg?.page) return { node: pg.page, isPost: false };
-      } catch {}
-    }
-    if (segments && segments.length >= 2 && segments[0] === 'category') {
-      const categorySlug = segments[1];
-      try {
-        const catData = await wpFetch<{ category: any }>(
-          CATEGORY_BY_SLUG_QUERY,
-          { slug: categorySlug },
-          revalidate,
-          `cat:${categorySlug}`
-        );
-        if (catData?.category) return { node: catData.category, isPost: false };
-      } catch {}
-    }
-    if (segments && segments.length) {
-      const lastSeg = segments[segments.length - 1];
-      try {
-        const catData = await wpFetch<{ category: any }>(
-          CATEGORY_BY_SLUG_QUERY,
-          { slug: lastSeg },
-          revalidate,
-          `cat:${lastSeg}`
-        );
-        if (catData?.category) return { node: catData.category, isPost: false };
-      } catch {}
-    }
-    return { node: null, isPost: false };
+function plainText(html?: string, max = 160) {
+  const text = (html || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  return text.slice(0, max);
+}
+
+function readingMinutesFromHtml(html?: string) {
+  const text = (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = text ? text.split(/\s+/).length : 0;
+  return Math.max(1, Math.round(words / 200));
+}
+
+function candidates(segments?: string[]) {
+  if (!segments || segments.length === 0) return [];
+  const joined = '/' + segments.join('/');
+  const set = new Set<string>();
+  const addForms = (s: string) => {
+    set.add(s);
+    set.add(s.endsWith('/') ? s : s + '/');
+  };
+  addForms(joined);
+  addForms(joined.toLowerCase());
+  try {
+    const dec = decodeURIComponent(joined);
+    addForms(dec);
+    addForms(dec.toLowerCase());
+  } catch {}
+  return Array.from(set);
+}
+
+async function resolveNode(segments?: string[]) {
+  const cs = candidates(segments);
+
+  for (const uri of cs) {
+    try {
+      const data = await wpFetch<{ nodeByUri: any }>(
+        NODE_BY_URI_QUERY,
+        { uri },
+        revalidate,
+        `node:${uri}`
+      );
+      if (data?.nodeByUri) {
+        const n = data.nodeByUri;
+        return { node: n, isPost: n.__typename === 'Post' };
+      }
+    } catch {}
   }
+  for (const uri of cs) {
+    try {
+      const p = await wpFetch<{ post: any }>(
+        POST_BY_URI_QUERY,
+        { uri },
+        revalidate,
+        `post:${uri}`
+      );
+      if (p?.post) return { node: p.post, isPost: true };
+    } catch {}
+    try {
+      const pg = await wpFetch<{ page: any }>(
+        PAGE_BY_URI_QUERY,
+        { uri },
+        revalidate,
+        `page:${uri}`
+      );
+      if (pg?.page) return { node: pg.page, isPost: false };
+    } catch {}
+  }
+  if (segments && segments.length >= 2 && segments[0] === 'category') {
+    const categorySlug = segments[1];
+    try {
+      const catData = await wpFetch<{ category: any }>(
+        CATEGORY_BY_SLUG_QUERY,
+        { slug: categorySlug },
+        revalidate,
+        `cat:${categorySlug}`
+      );
+      if (catData?.category) return { node: catData.category, isPost: false };
+    } catch {}
+  }
+  if (segments && segments.length) {
+    const lastSeg = segments[segments.length - 1];
+    try {
+      const catData = await wpFetch<{ category: any }>(
+        CATEGORY_BY_SLUG_QUERY,
+        { slug: lastSeg },
+        revalidate,
+        `cat:${lastSeg}`
+      );
+      if (catData?.category) return { node: catData.category, isPost: false };
+    } catch {}
+  }
+  return { node: null, isPost: false };
+}
 
   /* ---------------- metadata ---------------- */
   function metaFromNode(node: any, site: string, fallbackPath: string) {
