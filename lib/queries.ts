@@ -272,6 +272,7 @@ export const LATEST_POSTS_QUERY = `
         uri
         date
         excerpt
+        author { node { name } }
         featuredImage { node { sourceUrl altText } }
         categories(first: 1) { nodes { name slug } }
       }

@@ -72,7 +72,7 @@ export default async function HomePage() {
                   <article className="hb-feature">
                     <Link href={hero.uri || `/${hero.slug}`} className="hb-feature-link">
                       {hero.featuredImage?.node?.sourceUrl && (
-                        <div className="hb-media">
+                        <div className="hb-media" data-cat={hero.categories?.nodes?.[0]?.slug || 'news'}>
                           <img
                             src={hero.featuredImage.node.sourceUrl}
                             alt={hero.featuredImage.node.altText || hero.title}

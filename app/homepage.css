@@ -372,6 +372,20 @@
 .hb-cat[data-cat="nascar"]::after,
 .hb-mini-cat[data-cat="nascar"]::after { background: #f59e0b; }
 
+/* Golf accent mapping to green */
+.hb-cat[data-cat="golf"],
+.hb-mini-cat[data-cat="golf"] { background: #22c55e; }
+.hb-cat[data-cat="golf"]::after,
+.hb-mini-cat[data-cat="golf"]::after { background: #22c55e; }
+
+/* Corner/halftone color override per category */
+.hb-media[data-cat="golf"]::before { background: linear-gradient(135deg, #22c55e 0 50%, transparent 50% 100%); }
+.hb-media[data-cat="golf"]::after {
+  background:
+    radial-gradient(circle at 6px 6px, rgba(34,197,94,.95) 2px, transparent 2.2px) 0 0/12px 12px,
+    linear-gradient(to top, rgba(13,13,16,0.92), rgba(13,13,16,0));
+}
+
 /* ----- Mobile-first hero look “as in screenshot” ----- */
 @media (max-width: 768px) {
   /* Hero board mobile */
