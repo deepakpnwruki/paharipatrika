@@ -1,3 +1,7 @@
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.BUNDLE_ANALYZE === 'both',
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -44,6 +48,8 @@ const nextConfig = {
       },
     ];
   },
+
+  trailingSlash: true,
   serverExternalPackages: ['graphql'],
   typescript: {
     ignoreBuildErrors: false,
@@ -62,4 +68,4 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

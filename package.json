@@ -10,19 +10,24 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "build:analyze": "ANALYZE=true next build",
+    "analyze": "BUNDLE_ANALYZE=both next build",
     "test": "echo \"Add your test command here\" && exit 0"
   },
   "dependencies": {
+    "graphql": "latest",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest",
-    "graphql": "latest"
+    "react-dom": "latest"
   },
   "devDependencies": {
-    "typescript": "latest",
-    "@types/react": "latest",
+    "@fullhuman/postcss-purgecss": "^7.0.2",
+    "@next/bundle-analyzer": "^16.0.1",
     "@types/node": "latest",
+    "@types/react": "latest",
     "eslint": "latest",
-    "eslint-config-next": "latest"
+    "eslint-config-next": "latest",
+    "postcss-flexbugs-fixes": "^5.0.2",
+    "postcss-preset-env": "^10.4.0",
+    "typescript": "latest"
   }
 }

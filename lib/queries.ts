@@ -39,11 +39,6 @@ export const NODE_BY_URI_QUERY = `
             avatar {
               url
             }
-            ... on User {
-              linkedin: databaseId
-              facebook: databaseId
-              twitter: databaseId
-            }
           }
         }
         categories {

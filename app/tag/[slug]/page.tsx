@@ -10,7 +10,7 @@ type TagPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export const revalidate = 300;
+export const revalidate = 60;
 export const dynamicParams = true;
 
 function timeAgo(dateString?: string) {
@@ -121,7 +121,7 @@ export default async function TagPage({ params }: TagPageProps) {
                 
                 return (
                   <article key={post.slug} className={`es-tag-post ${isFirstPost ? 'es-tag-post--featured' : ''}`}>
-                    <Link href={href} className="es-tag-post__link">
+                    <Link href={href.endsWith('/') ? href : href + '/'} className="es-tag-post__link">
                       <div className="es-tag-post__content">
                         {!isFirstPost && (
                           <span className="es-tag-post__badge-top">NEWS</span>

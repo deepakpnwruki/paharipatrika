@@ -32,7 +32,7 @@ const HOMEPAGE_POSTS_QUERY = `
   }
 `;
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 export async function GET() {
   try {

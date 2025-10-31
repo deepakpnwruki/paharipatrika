@@ -3,7 +3,7 @@ import { wpFetch } from '../../../lib/graphql';
 import { PAGE_BY_URI_QUERY, POST_BY_URI_QUERY } from '../../../lib/queries';
 import type { Metadata } from 'next';
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 function candidates(segments: string[]) {
   // WordPress pages use URIs like /about/, /contact/, not /pages/about/

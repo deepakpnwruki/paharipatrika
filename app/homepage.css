@@ -1,3 +1,15 @@
+.hb-media {
+  border-radius: 14px !important;
+}
+.hb-mini-media {
+  border-radius: 12px !important;
+}
+.hp-card-media {
+  border-radius: 12px !important;
+}
+.hp-list-thumb {
+  border-radius: 8px !important;
+}
 .homepage {
   padding: 0;
   background: #f8f9fa;

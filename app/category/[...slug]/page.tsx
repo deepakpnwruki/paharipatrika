@@ -33,7 +33,7 @@ interface CategoryData {
   };
 }
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string[] }> }) {
   const { slug: slugArray } = await params;
@@ -53,7 +53,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
       <div className="container bbc-posts-grid">
         {category.posts?.nodes?.map((post: any) => (
-          <Link href={`/${post.slug}`} key={post.slug} className="bbc-post-card">
+          <Link href={`/${post.slug}/`} key={post.slug} className="bbc-post-card">
             {post.featuredImage?.node?.sourceUrl && (
               <img
                 src={post.featuredImage.node.sourceUrl}

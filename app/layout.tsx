@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { wpFetch } from '../lib/graphql';
 import { CATEGORIES_QUERY } from '../lib/queries';
 
@@ -134,6 +135,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="hi" dir="ltr">
       <head>
+        <link rel="alternate" hrefLang="hi-IN" href="/" />
         <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/feed.xml" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -151,9 +153,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body>
-        <Header logoUrl={logoUrl} siteTitle={siteTitle} categories={categories} />
-        {children}
-        <Footer />
+  <Header logoUrl={logoUrl} siteTitle={siteTitle} categories={categories} />
+  {/* If Breadcrumbs is used globally, render here. Otherwise, keep import for code splitting. */}
+  {children}
+  <Footer />
       </body>
     </html>
   );

@@ -84,7 +84,13 @@ export default function Home() {
               {/* Main Featured Post */}
               {featured && (
                 <article className="hb-feature">
-                  <Link href={featured.uri || `/${featured.slug}`} className="hb-feature-link">
+                  <Link href={
+                    featured.uri
+                      ? featured.uri.endsWith('/')
+                        ? featured.uri
+                        : featured.uri + '/'
+                      : `/${featured.slug}/`
+                  } className="hb-feature-link">
                     {featured.featuredImage?.node?.sourceUrl && (
                       <div 
                         className="hb-media" 
@@ -125,7 +131,13 @@ export default function Home() {
                 <div className="hb-trio">
                   {trio.map((post: PostNode) => (
                     <article key={post.slug} className="hb-mini">
-                      <Link href={post.uri || `/${post.slug}`} className="hb-mini-link">
+                      <Link href={
+                        post.uri
+                          ? post.uri.endsWith('/')
+                            ? post.uri
+                            : post.uri + '/'
+                          : `/${post.slug}/`
+                      } className="hb-mini-link">
                         {post.featuredImage?.node?.sourceUrl && (
                           <div className="hb-mini-media">
                             <Image
@@ -185,7 +197,13 @@ export default function Home() {
             <div className="hp-grid">
               {remaining.map((post: PostNode) => (
                 <article key={post.slug} className="hp-card">
-                  <Link href={post.uri || `/${post.slug}`} className="hp-card-link">
+                  <Link href={
+                    post.uri
+                      ? post.uri.endsWith('/')
+                        ? post.uri
+                        : post.uri + '/'
+                      : `/${post.slug}/`
+                  } className="hp-card-link">
                     {post.featuredImage?.node?.sourceUrl && (
                       <div className="hp-card-media">
                         <Image

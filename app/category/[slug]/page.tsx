@@ -5,7 +5,7 @@ import { wpFetch } from '../../../lib/graphql';
 import { CATEGORY_BY_SLUG_QUERY } from '../../../lib/queries';
 import './category-page.css';
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -160,7 +160,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                 const isFirst = index === 0;
                 return (
                   <article key={post.slug} className={`cat-post ${isFirst ? 'cat-post--featured' : ''}`}>
-                    <Link href={post.uri || `/${post.slug}`} className="cat-post__link">
+                    <Link href={
+                      post.uri
+                        ? post.uri.endsWith('/')
+                          ? post.uri
+                          : post.uri + '/'
+                        : `/${post.slug}/`
+                    } className="cat-post__link">
                       {post.featuredImage?.node?.sourceUrl && (
                         <div className="cat-post__image">
                           <img

@@ -16,7 +16,7 @@ import './article.css';
 
 type ParamPromise = Promise<{ slug?: string[] }>;
 
-export const revalidate = 300;
+export const revalidate = 60;
 export const dynamicParams = true;
 
 /* ---------------- utilities ---------------- */
@@ -303,44 +303,8 @@ async function resolveNode(segments?: string[]) {
     const readMins = readingMinutesFromHtml(node?.content);
 
     // author socials (best-effort)
-    const authorNode = (node as any)?.author?.node || {};
-    
-    // Debug: log author data to see what's available
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Author Node Data:', JSON.stringify(authorNode, null, 2));
-    }
-    
-    // Check author URL field first (WordPress default user profile field)
-    const authorUrl = authorNode?.url || '';
-    
-    // Extract LinkedIn from various possible sources
-    const authorLinkedIn: string | undefined =
-      authorNode?.linkedin || 
-      authorNode?.linkedIn || 
-      authorNode?.social?.linkedin || 
-      authorNode?.social?.linkedIn ||
-      authorNode?.userMeta?.linkedin || 
-      authorNode?.userMeta?.linkedIn ||
-      (typeof authorUrl === 'string' && authorUrl.includes('linkedin.com') ? authorUrl : undefined) ||
-      // Also check if slug or description contains LinkedIn URL
-      (typeof authorNode?.description === 'string' && authorNode.description.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/)?.[0] 
-        ? `https://${authorNode.description.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/)?.[0]}` 
-        : undefined);
-    
-    const authorFacebook: string | undefined =
-      authorNode?.facebook || 
-      authorNode?.social?.facebook || 
-      authorNode?.userMeta?.facebook ||
-      (typeof authorUrl === 'string' && authorUrl.includes('facebook.com') ? authorUrl : undefined);
-    
-    const authorTwitter: string | undefined =
-      authorNode?.x || 
-      authorNode?.twitter || 
-      authorNode?.social?.x || 
-      authorNode?.social?.twitter ||
-      authorNode?.userMeta?.x || 
-      authorNode?.userMeta?.twitter ||
-      (typeof authorUrl === 'string' && (authorUrl.includes('twitter.com') || authorUrl.includes('x.com')) ? authorUrl : undefined);
+  const authorNode = (node as any)?.author?.node || {};
+  const authorWebsite: string | undefined = authorNode?.url;
 
     // related buckets
     const sanitizedRelated = relatedPosts.filter((p: any) => p.slug !== node.slug);
@@ -377,12 +341,42 @@ async function resolveNode(segments?: string[]) {
                         {node.author?.node?.name && (
                           <div className="es-byline">
                             <span className="es-byline__name">By {node.author.node.name}</span>
-                            {authorLinkedIn && (
+                            {authorWebsite && (
                               <>
-                                <span className="es-pipe">|</span>
-                                <a href={authorLinkedIn} className="es-byline__ln" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile">
-                                  in
-                                </a>
+                                <span className="es-pipe" style={{ margin: '0 -1px 0 1px', verticalAlign: 'middle' }}>|</span>
+                                {authorWebsite.match(/twitter\.com|x\.com/) ? (
+                                  <a
+                                    href={authorWebsite}
+                                    className="es-byline__web"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="X (formerly Twitter) profile"
+                                    style={{ display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle', marginLeft: 0 }}
+                                  >
+                                    {/* Official X (Twitter) SVG icon provided by user */}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      width="16"
+                                      height="16"
+                                      fill="currentColor"
+                                      viewBox="0 0 16 16"
+                                      style={{ display: 'inline-block', verticalAlign: 'middle' }}
+                                    >
+                                      <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                                    </svg>
+                                  </a>
+                                ) : (
+                                  <a
+                                    href={authorWebsite}
+                                    className="es-byline__web"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="Author website"
+                                    style={{ display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle', marginLeft: 0 }}
+                                  >
+                                    <svg width="16" height="16" viewBox="0 0 16 16" style={{ display: 'block' }}><circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M2 8h12M8 2a13 13 0 010 12M8 2a13 13 0 000 12" stroke="currentColor" strokeWidth="1" fill="none"/></svg>
+                                  </a>
+                                )}
                               </>
                             )}
                           </div>
@@ -410,7 +404,7 @@ async function resolveNode(segments?: string[]) {
                   priority
                   sizes="(max-width: 768px) 100vw, 768px"
                   className="es-hero__img"
-                  caption="Imago"
+                  caption={img?.caption || img?.altText || ''}
                 />
               )}
             </div>
@@ -485,8 +479,7 @@ async function resolveNode(segments?: string[]) {
                     <div className="es-author__name">
                       {node.author.node.name}
                       <span className="es-author__sns">
-                        {authorFacebook && <a href={authorFacebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="sns-fb" />}
-                        {authorTwitter && <a href={authorTwitter} target="_blank" rel="noopener noreferrer" aria-label="X" className="sns-x" />}
+                        {authorWebsite && <a href={authorWebsite} target="_blank" rel="noopener noreferrer" aria-label="Website" className="sns-web" />}
                       </span>
                     </div>
                     <div className="es-author__role">{node.author.node.description || 'संवाददाता'}</div>
