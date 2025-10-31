@@ -217,6 +217,7 @@ export const CATEGORY_BY_SLUG_QUERY = `
           slug
           date
           uri
+          author { node { name } }
           featuredImage {
             node {
               sourceUrl

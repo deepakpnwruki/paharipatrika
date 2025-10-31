@@ -23,6 +23,24 @@ function formatDate(dateString: string) {
   }
 }
 
+// Mobile meta like: "Author • 2 hrs ago"
+function timeAgo(dateString?: string) {
+  if (!dateString) return '';
+  const then = new Date(dateString).getTime();
+  const now = Date.now();
+  const diff = Math.max(0, now - then);
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `${minutes || 1} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hrs ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} days ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `${weeks} wks ago`;
+  const months = Math.floor(days / 30);
+  return `${months} mo ago`;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   
@@ -83,6 +101,8 @@ export default async function CategoryPage({ params }: Props) {
   const category = data.category;
   const posts = category.posts?.nodes ?? [];
   const siteUrl = (process.env.SITE_URL || '').replace(/\/$/, '');
+  const firstPost = posts[0];
+  const morePosts = posts.slice(1);
 
   const structuredData = JSON.stringify({
     "@context": "https://schema.org",
@@ -124,6 +144,63 @@ export default async function CategoryPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: structuredData }}
       />
       
+      {/* Mobile-first category template */}
+      <section className="catm" aria-label="mobile category" >
+        <div className="catm-wrap">
+          <div className="catm-bc">
+            <Link href="/" className="catm-bc-home">Home</Link>
+            <span className="catm-bc-sep">/</span>
+            <span className="catm-bc-current">{category.name}</span>
+          </div>
+          <h1 className="catm-title">LATEST {category.name?.toUpperCase()} NEWS</h1>
+
+          {firstPost && (
+            <article className="catm-hero">
+              {firstPost?.featuredImage?.node?.sourceUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  className="catm-hero-img"
+                  src={firstPost.featuredImage.node.sourceUrl}
+                  alt={firstPost.featuredImage.node.altText || firstPost.title}
+                />
+              )}
+              <Link href={firstPost.uri || `/${firstPost.slug}`} className="catm-hero-link">
+                <h2 className="catm-hero-title">{firstPost.title}</h2>
+                <div className="catm-meta">
+                  <span className="catm-author">{firstPost?.author?.node?.name || 'Staff'}</span>
+                  <span aria-hidden className="dot">•</span>
+                  <time className="catm-time" dateTime={firstPost.date}>{timeAgo(firstPost.date)}</time>
+                </div>
+              </Link>
+            </article>
+          )}
+
+          <div className="catm-list" role="list">
+            {morePosts.map((p: any) => (
+              <Link role="listitem" href={p.uri || `/${p.slug}`} className="catm-item" key={p.slug}>
+                {p?.featuredImage?.node?.sourceUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    className="catm-thumb"
+                    src={p.featuredImage.node.sourceUrl}
+                    alt={p.featuredImage.node.altText || p.title}
+                    loading="lazy"
+                  />
+                )}
+                <div className="catm-item-body">
+                  <h3 className="catm-item-title">{p.title}</h3>
+                  <div className="catm-meta small">
+                    <span className="catm-author">{p?.author?.node?.name || 'Staff'}</span>
+                    <span aria-hidden className="dot">•</span>
+                    <time className="catm-time" dateTime={p.date}>{timeAgo(p.date)}</time>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <main className="category-page">
         <nav className="breadcrumb-nav" aria-label="breadcrumb">
           <div className="container">
