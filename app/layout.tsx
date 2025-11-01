@@ -9,7 +9,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#667eea',
+  themeColor: '#b80000',
 };
 
 export const metadata: Metadata = {
@@ -88,8 +88,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const logoUrl: string | null = null;
   const siteTitle = 'EduNews';
 
-  const siteUrl = process.env.SITE_URL || 'https://edunews.com';
-  const siteName = process.env.SITE_NAME || 'EduNews';
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://edunews.com').replace(/\/$/, '');
+  const siteName = process.env.SITE_NAME || process.env.NEXT_PUBLIC_SITE_NAME || 'EduNews';
   const orgName = process.env.ORGANIZATION_NAME || 'EduNews Media';
 
   const organizationSchema = JSON.stringify({
