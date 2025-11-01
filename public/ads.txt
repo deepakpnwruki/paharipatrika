@@ -1,0 +1,11 @@
+# ads.txt file for Pahari Patrika
+# Learn more: https://support.google.com/adsense/answer/7532444
+
+# Google AdSense
+google.com, pub-7262174488893520, DIRECT, f08c47fec0942fa0
+
+# Google Ad Manager (if you upgrade later)
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+
+# Note: Add additional ad networks here as you partner with them
+# Format: <DOMAIN>, <PUBLISHER_ID>, <RELATIONSHIP>, <CERTIFICATION_AUTHORITY_ID>

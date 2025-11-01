@@ -10,14 +10,49 @@ import {
 } from '../../lib/queries';
 import ShareButtons from '../../components/ShareButtons';
 import ImageCaption from '../../components/ImageCaption';
+import InArticleAd from '../../components/InArticleAd';
+import ArticleContentWithAds from '../../components/ArticleContentWithAds';
+import SocialEmbeds from '../../components/SocialEmbeds';
+import EmbedProcessor from '../../components/EmbedProcessor';
 import Link from 'next/link';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import './article.css';
 
 type ParamPromise = Promise<{ slug?: string[] }>;
 
-export const revalidate = 300;
-export const dynamicParams = true;
+export const revalidate = 60; // ISR: 1 minute for breaking news articles
+export const dynamic = 'force-static'; // Use ISR for better performance
+export const dynamicParams = true; // Allow new articles dynamically
+
+// Pre-generate most recent and popular posts at build time for instant loading
+export async function generateStaticParams() {
+  try {
+    // Fetch recent posts to pre-generate
+    const data = await wpFetch<{ posts: { nodes: Array<{ slug: string; uri: string }> } }>(
+      `query RecentPosts {
+        posts(first: 100, where: { orderby: { field: DATE, order: DESC } }) {
+          nodes {
+            slug
+            uri
+          }
+        }
+      }`,
+      {},
+      3600
+    );
+    
+    return (data?.posts?.nodes || [])
+      .filter(post => post.uri) // Ensure valid URIs
+      .map((post) => {
+        // Convert /post-slug/ to { slug: ['post-slug'] }
+        const segments = post.uri.split('/').filter(Boolean);
+        return { slug: segments };
+      });
+  } catch (error) {
+    console.error('Error generating static params for posts:', error);
+    return [];
+  }
+}
 
 /* ---------------- utilities ---------------- */
 function timeAgo(dateString?: string) {
@@ -47,12 +82,6 @@ function absoluteUrl(url?: string, site?: string) {
 function plainText(html?: string, max = 160) {
   const text = (html || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
   return text.slice(0, max);
-}
-
-function readingMinutesFromHtml(html?: string) {
-  const text = (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  const words = text ? text.split(/\s+/).length : 0;
-  return Math.max(1, Math.round(words / 200));
 }
 
 function candidates(segments?: string[]) {
@@ -160,7 +189,7 @@ async function resolveNode(segments?: string[]) {
     const meta = metaFromNode(node, site, '/' + (slug || []).join('/'));
 
     return {
-      title: `${meta.title} | ${process.env.SITE_NAME || 'EduNews'}`,
+      title: `${meta.title} | ${process.env.SITE_NAME || 'Pahari Patrika'}`,
       description: meta.desc,
       alternates: { canonical: meta.canonical },
       robots: {
@@ -173,7 +202,7 @@ async function resolveNode(segments?: string[]) {
         url: meta.canonical,
         type: node.__typename === 'Post' ? 'article' : 'website',
         locale: 'hi_IN',
-        siteName: process.env.SITE_NAME || 'EduNews',
+        siteName: process.env.SITE_NAME || 'Pahari Patrika',
         images: node?.featuredImage?.node?.sourceUrl
           ? [{
               url: absoluteUrl(node.featuredImage.node.sourceUrl, site),
@@ -274,8 +303,7 @@ async function resolveNode(segments?: string[]) {
     const primaryCategory = node?.categories?.nodes?.[0];
     const breadcrumbs = [
       { name: 'Home', href: '/' },
-      ...(primaryCategory?.slug ? [{ name: primaryCategory.name, href: `/category/${primaryCategory.slug}` }] : []),
-      { name: node.title || 'Article' }
+      ...(primaryCategory?.slug ? [{ name: primaryCategory.name, href: `/category/${primaryCategory.slug}` }] : [])
     ];
 
     const schema = JSON.stringify({
@@ -309,7 +337,7 @@ async function resolveNode(segments?: string[]) {
           url: node.author.node.avatar.url
         } : undefined
       } : undefined,
-      publisher: { '@type': 'NewsMediaOrganization', name: process.env.ORGANIZATION_NAME || 'EduNews Media', logo: { '@type': 'ImageObject', url: `${site}/logo.png`, width: 600, height: 60 } },
+      publisher: { '@type': 'NewsMediaOrganization', name: process.env.ORGANIZATION_NAME || 'Pahari Patrika Media', logo: { '@type': 'ImageObject', url: `${site}/logo.png`, width: 600, height: 60 } },
       mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
       url: canonical,
       inLanguage: 'hi-IN',
@@ -318,38 +346,49 @@ async function resolveNode(segments?: string[]) {
       wordCount: plainText(node?.content).split(/\s+/).filter(Boolean).length
     });
 
-    const breadcrumbSchema = JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: breadcrumbs.map((crumb, index) => ({
-        '@type': 'ListItem',
-        position: index + 1,
-        name: crumb.name,
-        item: crumb.href ? `${site}${crumb.href}` : undefined
-      }))
-    });
-
     function wrapTables(content: string): string {
       return content
         .replace(/<table([^>]*)>/gi, '<div class="table-wrapper"><table$1>')
         .replace(/<\/table>/gi, '</table></div>');
     }
-    const processedContent = node.content ? wrapTables(node.content) : '';
+    
+    // Function to insert ads every 2 paragraphs
+    function insertAdsInContent(content: string): string {
+      // Split content by paragraphs
+      const paragraphs = content.split(/<\/p>/gi);
+      let result = '';
+      let paragraphCount = 0;
+      
+      for (let i = 0; i < paragraphs.length; i++) {
+        // Add the paragraph back
+        if (paragraphs[i].trim()) {
+          result += paragraphs[i] + '</p>';
+          
+          // Check if this is a valid paragraph (not just whitespace or inside other tags)
+          if (paragraphs[i].includes('<p')) {
+            paragraphCount++;
+            
+            // Insert ad after every 2 paragraphs
+            if (paragraphCount % 2 === 0 && i < paragraphs.length - 1) {
+              result += `<div class="article-ad-slot" data-ad-position="${Math.floor(paragraphCount / 2)}"></div>`;
+            }
+          }
+        }
+      }
+      
+      return result;
+    }
+    
+    const processedContent = node.content ? insertAdsInContent(wrapTables(node.content)) : '';
 
     const dt = new Date((node as any)?.date || Date.now());
     const tz = 'Asia/Kolkata';
     const datePart = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: tz }).format(dt);
     const timePart = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz }).format(dt);
     const mobDateStr = `${datePart} | ${timePart} IST`;
-  const _readMins = readingMinutesFromHtml(node?.content);
 
     // author socials (best-effort)
     const authorNode = (node as any)?.author?.node || {};
-    
-    // Debug: log author data to see what's available
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Author Node Data:', JSON.stringify(authorNode, null, 2));
-    }
     
     // Check author URL field first (WordPress default user profile field)
     const authorUrl = authorNode?.url || '';
@@ -389,7 +428,6 @@ async function resolveNode(segments?: string[]) {
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: schema }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbSchema }} />
         <main className="es-page">
           {/* ---------- HERO ---------- */}
           <section className="es-hero">
@@ -438,10 +476,11 @@ async function resolveNode(segments?: string[]) {
 
               {img?.sourceUrl && (() => {
                 const photoCaption = plainText(img?.caption || img?.description || '', 240) || (img?.altText || '');
+                const imageAlt = img?.altText || node.title || 'Article image';
                 return (
                   <ImageCaption
                     src={absoluteUrl(img.sourceUrl, site)}
-                    alt={img?.altText || node.title}
+                    alt={imageAlt}
                     width={768}
                     height={432}
                     priority
@@ -459,8 +498,74 @@ async function resolveNode(segments?: string[]) {
             {/* LEFT: article */}
             <article className="es-article">
               <div className="es-article__body">
-                <div className="en-content" dangerouslySetInnerHTML={{ __html: processedContent }} />
+                <SocialEmbeds />
+                <ArticleContentWithAds 
+                  content={processedContent} 
+                  inArticleAdSlot={process.env.NEXT_PUBLIC_ADSENSE_IN_ARTICLE_SLOT || ''}
+                />
+                <EmbedProcessor content={processedContent} />
               </div>
+
+              {/* Author Box - E-E-A-T Compliant */}
+              {node.author?.node && (
+                <div className="es-author-eeat">
+                  <div className="es-author-eeat__content">
+                    {node.author.node.avatar?.url && (
+                      <div className="es-author-eeat__avatar">
+                        <Image 
+                          src={node.author.node.avatar.url} 
+                          alt={node.author.node.name} 
+                          width={64}
+                          height={64}
+                          className="es-author-eeat__img" 
+                        />
+                      </div>
+                    )}
+                    <div className="es-author-eeat__info">
+                      <div className="es-author-eeat__label">Written by</div>
+                      <div className="es-author-eeat__name">
+                        {node.author.node.slug ? (
+                          <Link href={`/author/${node.author.node.slug}`} className="es-author-eeat__link">
+                            {node.author.node.name}
+                          </Link>
+                        ) : (
+                          node.author.node.name
+                        )}
+                      </div>
+                      {node.author.node.description && (
+                        <div className="es-author-eeat__bio">
+                          {node.author.node.description.length > 120 
+                            ? `${node.author.node.description.substring(0, 120)}...` 
+                            : node.author.node.description}
+                          {node.author.node.description.length > 120 && node.author.node.slug && (
+                            <Link href={`/author/${node.author.node.slug}`} className="es-author-eeat__know-more">
+                              {' '}Know More
+                            </Link>
+                          )}
+                        </div>
+                      )}
+                      {(authorFacebook || authorTwitter) && (
+                        <div className="es-author-eeat__social">
+                          {authorFacebook && (
+                            <a href={authorFacebook} target="_blank" rel="noopener noreferrer author" aria-label="Follow on Facebook" className="es-author-eeat__social-link">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                              </svg>
+                            </a>
+                          )}
+                          {authorTwitter && (
+                            <a href={authorTwitter} target="_blank" rel="noopener noreferrer author" aria-label="Follow on X" className="es-author-eeat__social-link">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Share this with a friend */}
               <div className="es-share-section">
@@ -472,6 +577,13 @@ async function resolveNode(segments?: string[]) {
                   variant="pill"
                 />
               </div>
+
+              {/* Ad after Share Section - 300x50 */}
+              <InArticleAd 
+                slot={process.env.NEXT_PUBLIC_ADSENSE_AFTER_SHARE_SLOT || ''} 
+                size="300x50"
+                className="after-share-ad"
+              />
 
               {/* Related Topics Tags */}
               {Array.isArray(node?.tags?.nodes) && node.tags.nodes.length > 0 && (
@@ -512,33 +624,12 @@ async function resolveNode(segments?: string[]) {
                 </div>
               )}
 
-              {/* Author card */}
-              {node.author?.node && (
-                <div className="es-author">
-                  {node.author.node.avatar?.url && (
-                    <div style={{ position: 'relative', width: '48px', height: '48px', borderRadius: '50%', overflow: 'hidden' }}>
-                      <Image 
-                        src={node.author.node.avatar.url} 
-                        alt={node.author.node.name} 
-                        fill
-                        sizes="48px"
-                        style={{ objectFit: 'cover' }}
-                        className="es-author__img" 
-                      />
-                    </div>
-                  )}
-                  <div className="es-author__info">
-                    <div className="es-author__name">
-                      {node.author.node.name}
-                      <span className="es-author__sns">
-                        {authorFacebook && <a href={authorFacebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="sns-fb" />}
-                        {authorTwitter && <a href={authorTwitter} target="_blank" rel="noopener noreferrer" aria-label="X" className="sns-x" />}
-                      </span>
-                    </div>
-                    <div className="es-author__role">{node.author.node.description || 'संवाददाता'}</div>
-                  </div>
-                </div>
-              )}
+              {/* Ad after Related Articles - 300x250 */}
+              <InArticleAd 
+                slot={process.env.NEXT_PUBLIC_ADSENSE_AFTER_RELATED_SLOT || ''} 
+                size="300x250"
+                className="after-related-ad"
+              />
 
               {/* Tags */}
               {Array.isArray(node?.tags?.nodes) && node.tags.nodes.length > 0 && (
@@ -558,7 +649,7 @@ async function resolveNode(segments?: string[]) {
               {relatedItems.length > 0 && (
                 <section className="es-related" aria-label="More articles">
                   <h2 className="es-related__title">
-                    More from {process.env.SITE_NAME || 'EduNews'}
+                    More from {process.env.SITE_NAME || 'Pahari Patrika'}
                     {primaryCategory?.name ? ` on ${primaryCategory.name}` : ''}
                   </h2>
                   <div className="es-related__grid">

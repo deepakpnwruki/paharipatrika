@@ -87,7 +87,7 @@ export default async function Footer() {
   }
 
   const year = new Date().getFullYear();
-  const siteName = process.env.SITE_NAME || 'EduNews';
+  const siteName = process.env.SITE_NAME || 'Pahari Patrika';
   const showSocial = String(process.env.ENABLE_SOCIAL_FOOTER || '').toLowerCase() === 'true';
   const socials = [
     { key: 'SOCIAL_FACEBOOK', label: 'Facebook', href: process.env.SOCIAL_FACEBOOK, icon: (

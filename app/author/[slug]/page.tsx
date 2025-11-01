@@ -1,8 +1,37 @@
 import { wpFetch } from '../../../lib/graphql';
 import { AUTHOR_BY_SLUG_QUERY } from '../../../lib/queries';
+import { generateAuthorProfileSchema } from '../../../lib/structured-data';
 import Link from 'next/link';
 import Image from 'next/image';
+import type { Metadata } from 'next';
 import './author.css';
+
+export const revalidate = 600; // ISR: 10 minutes for author pages (less dynamic)
+export const dynamic = 'force-static';
+export const dynamicParams = true;
+
+// Pre-generate top authors at build time
+export async function generateStaticParams() {
+  try {
+    const data = await wpFetch<{ users: { nodes: Array<{ slug: string }> } }>(
+      `query TopAuthors {
+        users(first: 50, where: { hasPublishedPosts: [POST] }) {
+          nodes {
+            slug
+          }
+        }
+      }`,
+      {},
+      3600
+    );
+    
+    return (data?.users?.nodes || []).map((user) => ({
+      slug: user.slug,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 type Props = {
   params: { slug: string };
@@ -25,13 +54,64 @@ function timeAgo(dateString?: string) {
   return `${months} mo ago`;
 }
 
-export default async function AuthorPage({ params }: Props) {
-  // Next.js 16: params may be a Promise, so unwrap if needed
-  function isPromise<T>(val: any): val is Promise<T> {
-    return val && typeof val.then === 'function';
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const resolvedParams = await Promise.resolve(params);
+  const slug = resolvedParams.slug;
+  
+  try {
+    const data = await wpFetch<{ user: any }>(AUTHOR_BY_SLUG_QUERY, { slug, first: 1 }, 300);
+    const author = data?.user;
+    
+    if (!author) {
+      return { title: 'Author Not Found' };
+    }
+    
+    const siteUrl = (process.env.SITE_URL || 'https://paharipatrika.in').replace(/\/$/, '');
+    const authorUrl = `${siteUrl}/author/${slug}`;
+    const description = author.description || `Read articles by ${author.name}, journalist at ${process.env.ORGANIZATION_NAME || 'Pahari Patrika Media'}`;
+    
+    return {
+      title: `${author.name} - ${process.env.ORGANIZATION_NAME || 'Pahari Patrika Media'}`,
+      description,
+      alternates: { canonical: authorUrl },
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
+      },
+      openGraph: {
+        title: author.name,
+        description,
+        url: authorUrl,
+        type: 'profile',
+        images: author.avatar?.url ? [{
+          url: author.avatar.url,
+          width: 400,
+          height: 400,
+          alt: author.name
+        }] : [],
+      },
+      twitter: {
+        card: 'summary',
+        title: author.name,
+        description,
+        images: author.avatar?.url ? [author.avatar.url] : [],
+      },
+    };
+  } catch {
+    return { title: 'Author Not Found' };
   }
-  const resolvedParams = isPromise<{ slug: string }>(params) ? await params : params;
-  const slug = (resolvedParams as { slug: string })?.slug;
+}
+
+export default async function AuthorPage({ params }: Props) {
+  // Next.js 15+: params is always a Promise
+  const resolvedParams = await params;
+  const slug = resolvedParams?.slug;
   let error: string | null = null;
   let author: any = null;
   let posts: any[] = [];
@@ -62,8 +142,17 @@ export default async function AuthorPage({ params }: Props) {
     return <div>{error}</div>;
   }
 
+  const siteUrl = (process.env.SITE_URL || 'https://edunews.com').replace(/\/$/, '');
+  const authorSchema = generateAuthorProfileSchema(author, siteUrl);
+
   return (
     <main className="author-page">
+      {/* E-E-A-T: Author structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(authorSchema) }}
+      />
+      
       <section className="author-hero">
         <div className="author-avatar">
           {author.avatar?.url && (

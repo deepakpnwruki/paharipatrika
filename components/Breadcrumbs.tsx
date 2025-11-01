@@ -6,7 +6,7 @@ export default function Breadcrumbs({ items, className }: { items: Crumb[]; clas
   const cls = ['meta', className].filter(Boolean).join(' ');
   
   // Generate BreadcrumbList structured data
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://edunews.com').replace(/\/$/, '');
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://paharipatrika.in').replace(/\/$/, '');
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",

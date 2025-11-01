@@ -16,8 +16,8 @@ export function generateSEOData(
   post: any,
   type: 'post' | 'page' | 'category' = 'page'
 ): SEOData {
-  const siteUrl = process.env.SITE_URL || 'https://edunews.com';
-  const siteName = process.env.SITE_NAME || 'EduNews';
+  const siteUrl = process.env.SITE_URL || 'https://paharipatrika.in';
+  const siteName = process.env.SITE_NAME || 'Pahari Patrika';
   
   const title = post?.title || post?.name || 'Page';
   const description = post?.excerpt || post?.description || `${title} - ${siteName}`;

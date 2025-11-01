@@ -18,26 +18,47 @@ export default function ShareButtons({ url, title, className, networks, variant 
   const [copied, setCopied] = useState(false);
 
   const handleShare = async (platform: Network) => {
-    const shareUrl = url;
-    const shareTitle = title;
+    // Validate inputs
+    if (!url || !title) {
+      console.error('Share error: Missing url or title');
+      return;
+    }
+
+    const shareUrl = encodeURIComponent(url);
+    const shareTitle = encodeURIComponent(title);
 
     switch (platform) {
       case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`, '_blank', 'noopener,noreferrer');
         break;
       case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`, '_blank');
+        window.open(`https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`, '_blank', 'noopener,noreferrer');
         break;
       case 'whatsapp':
-        window.open(`https://wa.me/?text=${encodeURIComponent(shareTitle + ' ' + shareUrl)}`, '_blank');
+        window.open(`https://wa.me/?text=${shareTitle}%20${shareUrl}`, '_blank', 'noopener,noreferrer');
         break;
       case 'copy':
         try {
-          await navigator.clipboard.writeText(shareUrl);
+          await navigator.clipboard.writeText(url);
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         } catch (err) {
           console.error('Failed to copy:', err);
+          // Fallback for older browsers
+          try {
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          } catch (fallbackErr) {
+            console.error('Fallback copy also failed:', fallbackErr);
+          }
         }
         break;
     }

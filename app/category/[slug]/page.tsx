@@ -5,7 +5,32 @@ import { wpFetch } from '../../../lib/graphql';
 import { CATEGORY_BY_SLUG_QUERY } from '../../../lib/queries';
 import './category-page.css';
 
-export const revalidate = 300;
+export const revalidate = 300; // ISR: 5 minutes for category pages (semi-static)
+export const dynamic = 'force-static'; // Force static generation
+export const dynamicParams = true; // Allow new categories
+
+// Pre-generate top categories at build time
+export async function generateStaticParams() {
+  try {
+    const data = await wpFetch<{ categories: { nodes: Array<{ slug: string }> } }>(
+      `query TopCategories {
+        categories(first: 20) {
+          nodes {
+            slug
+          }
+        }
+      }`,
+      {},
+      3600
+    );
+    
+    return (data?.categories?.nodes || []).map((cat) => ({
+      slug: cat.slug,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -44,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     const category = data.category;
-    const siteName = process.env.SITE_NAME || 'EduNews';
+    const siteName = process.env.SITE_NAME || 'Pahari Patrika';
     const siteUrl = (process.env.SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
     const description = category.description || `${category.name} की ताज़ा खबरें, समाचार और अपडेट्स - ${siteName}`;
 

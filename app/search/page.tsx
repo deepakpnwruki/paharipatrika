@@ -15,11 +15,16 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const resolvedParams = await searchParams;
   const q = getQueryParam(resolvedParams);
   let posts: any[] = [];
-  if (q) {
-    // fallback: use POSTS_QUERY and filter client-side minimal (WPGraphQL has search arg but we keep deps minimal)
-    const data = await wpFetch<{ posts: any }>(POSTS_QUERY, { first: 20 }, revalidate, `searchseed`);
-    const nodes = data.posts?.nodes ?? [];
-    posts = nodes.filter((n:any)=> (n.title||'').toLowerCase().includes(q.toLowerCase()));
+  if (q && q.trim()) {
+    try {
+      // fallback: use POSTS_QUERY and filter client-side minimal (WPGraphQL has search arg but we keep deps minimal)
+      const data = await wpFetch<{ posts: any }>(POSTS_QUERY, { first: 20 }, revalidate, `searchseed`);
+      const nodes = data.posts?.nodes ?? [];
+      const normalizedQuery = q.toLowerCase().trim();
+      posts = nodes.filter((n:any)=> (n.title||'').toLowerCase().includes(normalizedQuery));
+    } catch (error) {
+      console.error('Search error:', error);
+    }
   }
   return (
     <div className="container">

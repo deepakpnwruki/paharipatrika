@@ -22,7 +22,7 @@ export default function ImageCaption({
   priority,
   sizes,
   className,
-  caption
+  caption = 'Imago'
 }: ImageCaptionProps) {
   const [showCaption, setShowCaption] = useState(false);
 
@@ -38,7 +38,7 @@ export default function ImageCaption({
         className={className}
       />
       <div className={`es-hero__caption ${showCaption ? 'is-active' : ''}`}>
-  <span className="es-caption__text">{(caption || alt)?.replace(/^<p>|<\/p>$/gi, '').replace(/<p>/gi, '').replace(/<\/p>/gi, '')}</span>
+        <span className="es-caption__text">{caption}</span>
         <button
           className="es-caption__info"
           onClick={() => setShowCaption(!showCaption)}

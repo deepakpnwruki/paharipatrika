@@ -1,7 +1,7 @@
 "use client";
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface Category {
   name: string;
@@ -15,7 +15,8 @@ interface HeaderProps {
 }
 
 export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: HeaderProps) {
-  const siteName = siteTitle || process.env.SITE_NAME || 'EduNews';
+  const [isSticky, setIsSticky] = useState(false);
+  const siteName = siteTitle || process.env.SITE_NAME || 'Pahari Patrika';
   const logoSrc = _logoUrl || process.env.NEXT_PUBLIC_SITE_LOGO || process.env.SITE_LOGO_URL || '/logo.svg';
   const logoWidth = Number(process.env.NEXT_PUBLIC_LOGO_WIDTH || 180);
   const logoHeight = Number(process.env.NEXT_PUBLIC_LOGO_HEIGHT || 40);
@@ -23,29 +24,11 @@ export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: Hea
 
   useEffect(() => {
     // Only run on mobile
-    if (typeof window === 'undefined' || window.innerWidth > 768) return;
-
-    const nav = document.querySelector('.en-nav-bar') as HTMLElement;
-    if (!nav) return;
-
-    const navOffset = nav.offsetTop;
+    if (window.innerWidth > 768) return;
 
     const handleScroll = () => {
-      const currentScroll = window.pageYOffset;
-      
-      if (currentScroll > navOffset) {
-        nav.style.position = 'fixed';
-        nav.style.top = '0';
-        nav.style.left = '0';
-        nav.style.right = '0';
-        nav.style.width = '100%';
-        nav.style.zIndex = '99';
-        nav.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-      } else {
-        nav.style.position = 'relative';
-        nav.style.top = '';
-        nav.style.boxShadow = '';
-      }
+      const scrollPosition = window.pageYOffset;
+      setIsSticky(scrollPosition > 150);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -71,6 +54,7 @@ export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: Hea
             <div className="en-logo-section" style={{ marginLeft: 12 }}>
               <Link href="/" aria-label={`${siteName} - होम पेज पर जाएं`}>
                 <div className="en-logo-wrapper">{isSvgLogo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={logoSrc}
                       alt={siteName}
@@ -114,7 +98,12 @@ export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: Hea
       <div className="en-header-divider" aria-hidden="true"></div>
 
       {/* Navigation Bar */}
-      <nav className="en-nav-bar" role="navigation" aria-label="मुख्य नेविगेशन">
+      <nav 
+        className="en-nav-bar"
+        data-sticky={isSticky}
+        role="navigation" 
+        aria-label="मुख्य नेविगेशन"
+      >
         <div className="en-nav-menu">
           <Link href="/" className="en-nav-link" aria-current="page" aria-label="होम">
             <svg className="en-nav-icon en-nav-icon--home" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -123,7 +112,7 @@ export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: Hea
             </svg>
             होम
           </Link>
-          {Array.isArray(categories) && categories.slice(0, 8).map((c: Category) => (
+          {Array.isArray(categories) && categories.length > 0 && categories.slice(0, 8).map((c: Category) => (
             <Link 
               key={c.slug} 
               href={`/category/${encodeURIComponent(c.slug)}`}

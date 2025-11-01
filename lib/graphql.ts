@@ -1,5 +1,8 @@
 type Vars = Record<string, any> | undefined;
 
+// Performance monitoring
+const ENABLE_PERF_LOGS = process.env.ENABLE_GRAPHQL_PERF_LOGS === 'true';
+
 export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: number, tag?: string): Promise<T> {
   const endpoint = process.env.WP_GRAPHQL_ENDPOINT || process.env.WP_GRAPHQL_URL;
   if (!endpoint) {
@@ -9,31 +12,45 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
   const rv = revalidate ?? Number(process.env.REVALIDATE_SECONDS ?? 300);
 
   // NEW: timeout + retry
-  const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS ?? 10000);
-  const maxRetries = Number(process.env.WP_FETCH_RETRIES ?? 1);
+  const timeoutMs = Number(process.env.WP_GRAPHQL_TIMEOUT_MS ?? 15000); // Increased to 15s for build time
+  const maxRetries = Number(process.env.WP_FETCH_RETRIES ?? 3); // Increased retries
+
+  // Extract query name for logging
+  const queryName = query.match(/(?:query|mutation)\s+(\w+)/)?.[1] || 'UnnamedQuery';
+  const totalStartTime = Date.now();
 
   let lastErr: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), timeoutMs);
+    const attemptStartTime = Date.now();
+    
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'User-Agent': 'EduNews/1.0'
+          'Accept-Encoding': 'gzip, deflate, br',
+          'User-Agent': 'PahariPatrika/1.0',
+          'Connection': 'keep-alive'
         },
         body: JSON.stringify({ query, variables }),
         signal: controller.signal,
-        next: { revalidate: rv, tags: tag ? [tag] : undefined }
+        next: { revalidate: rv, tags: tag ? [tag] : undefined },
+        keepalive: true
       });
       clearTimeout(t);
 
+      const fetchDuration = Date.now() - attemptStartTime;
+
       if (!res.ok) {
+        if (ENABLE_PERF_LOGS) {
+          console.warn(`⚠️  [${queryName}] HTTP ${res.status} in ${fetchDuration}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
+        }
         // Retry only on 5xx
         if (res.status >= 500 && attempt < maxRetries) {
-          await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // Increased delay
           continue;
         }
         console.error(`WPGraphQL HTTP Error: ${res.status} ${res.statusText}`);
@@ -41,6 +58,14 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
       }
 
       const json = await res.json();
+      const totalDuration = Date.now() - totalStartTime;
+
+      // Performance logging
+      if (ENABLE_PERF_LOGS) {
+        const status = totalDuration > 1000 ? '🐌' : totalDuration > 500 ? '⚠️' : '✅';
+        console.log(`${status} [${queryName}] ${totalDuration}ms (fetch: ${fetchDuration}ms, attempt: ${attempt + 1})`);
+      }
+
       if (json.errors) {
         // Bubble the first error message
         const msg = Array.isArray(json.errors) && json.errors[0]?.message ? json.errors[0].message : 'GraphQL query failed';
@@ -51,13 +76,21 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
     } catch (error) {
       clearTimeout(t);
       lastErr = error;
+      
+      const attemptDuration = Date.now() - attemptStartTime;
+      if (ENABLE_PERF_LOGS) {
+        console.error(`❌ [${queryName}] Failed in ${attemptDuration}ms (attempt ${attempt + 1}/${maxRetries + 1}):`, error instanceof Error ? error.message : error);
+      }
+      
       // Retry aborted/network/5xx only
       if (attempt < maxRetries) {
-        await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // Increased delay
         continue;
       }
     }
   }
-  console.error('WordPress GraphQL fetch error:', lastErr);
+  
+  const totalDuration = Date.now() - totalStartTime;
+  console.error(`❌ [${queryName}] All retries failed after ${totalDuration}ms:`, lastErr);
   throw lastErr as Error;
 }

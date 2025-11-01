@@ -1,6 +1,8 @@
 # EduNews - Headless WordPress News Platform
 
-A modern, production-ready news platform built with Next.js 16 and WordPress as a headless CMS.
+# Pahari Patrika - Headless WordPress News Platform
+
+Modern, blazing-fast news platform built with Next.js 16 (App Router), TypeScript, and WordPress as a headless CMS. Features ISR (Incremental Static Regeneration), comprehensive SEO optimization, and social media embeds.
 
 ## ✨ Features
 
@@ -26,8 +28,8 @@ A modern, production-ready news platform built with Next.js 16 and WordPress as 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/edunews-next.git
-cd edunews-next
+git clone https://github.com/yourusername/paharipatrika-next.git
+cd paharipatrika-next
 
 # Install dependencies
 npm install
@@ -47,8 +49,8 @@ WORDPRESS_GRAPHQL_ENDPOINT=https://your-wordpress-site.com/graphql
 
 # Site Configuration
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
-SITE_NAME=EduNews
-ORGANIZATION_NAME=EduNews Media
+SITE_NAME=Pahari Patrika
+ORGANIZATION_NAME=Pahari Patrika Media
 SITE_URL=https://your-domain.com
 
 # Revalidation
@@ -196,8 +198,8 @@ MIT License - feel free to use this project for personal or commercial purposes.
 
 ## 🆘 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/edunews-next/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/edunews-next/discussions)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/paharipatrika-next/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/paharipatrika-next/discussions)
 
 ## 🙏 Acknowledgments
 

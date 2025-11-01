@@ -19,8 +19,8 @@ export function generateArticleSchema({
   url,
   siteName: _siteName,
 }: ArticleSchemaProps): string {
-  const siteUrl = process.env.SITE_URL || 'https://edunews.com';
-  const orgName = process.env.ORGANIZATION_NAME || 'EduNews Media';
+  const siteUrl = process.env.SITE_URL || 'https://paharipatrika.in';
+  const orgName = process.env.ORGANIZATION_NAME || 'Pahari Patrika Media';
 
   const schema = {
     '@context': 'https://schema.org',

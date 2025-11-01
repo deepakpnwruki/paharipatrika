@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { wpFetch } from '../lib/graphql';
@@ -15,14 +16,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
-    default: `${process.env.SITE_NAME || 'EduNews'} - ताज़ा खबरें और समाचार`,
-    template: `%s | ${process.env.SITE_NAME || 'EduNews'}`,
+    default: `${process.env.SITE_NAME || 'Pahari Patrika'} - ताज़ा खबरें और समाचार`,
+    template: `%s | ${process.env.SITE_NAME || 'Pahari Patrika'}`,
   },
   description: 'भारत की ताज़ा खबरें, शिक्षा समाचार, राजनीति, खेल, मनोरंजन और अधिक। हर खबर, हर पल।',
   keywords: ['news', 'hindi news', 'education news', 'india news', 'breaking news', 'ताज़ा खबरें'],
-  authors: [{ name: process.env.ORGANIZATION_NAME || 'EduNews Media' }],
-  creator: process.env.ORGANIZATION_NAME || 'EduNews Media',
-  publisher: process.env.ORGANIZATION_NAME || 'EduNews Media',
+  authors: [{ name: process.env.ORGANIZATION_NAME || 'Pahari Patrika Media' }],
+  creator: process.env.ORGANIZATION_NAME || 'Pahari Patrika Media',
+  publisher: process.env.ORGANIZATION_NAME || 'Pahari Patrika Media',
   robots: {
     index: true,
     follow: true,
@@ -47,23 +48,23 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'hi_IN',
     url: '/',
-    siteName: process.env.SITE_NAME || 'EduNews',
-    title: `${process.env.SITE_NAME || 'EduNews'} - ताज़ा खबरें`,
+    siteName: process.env.SITE_NAME || 'Pahari Patrika',
+    title: `${process.env.SITE_NAME || 'Pahari Patrika'} - ताज़ा खबरें`,
     description: 'भारत की ताज़ा खबरें और समाचार',
     images: [
       {
         url: '/og-image.svg',
         width: 1200,
         height: 630,
-        alt: process.env.SITE_NAME || 'EduNews',
+        alt: process.env.SITE_NAME || 'Pahari Patrika',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${process.env.SITE_NAME || 'EduNews'} - ताज़ा खबरें`,
+    title: `${process.env.SITE_NAME || 'Pahari Patrika'} - ताज़ा खबरें`,
     description: 'भारत की ताज़ा खबरें और समाचार',
-    creator: '@edunews',
+    creator: '@paharipatrika',
     images: ['/og-image.svg'],
   },
   manifest: '/manifest.webmanifest',
@@ -86,11 +87,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const categories = catsData?.categories?.nodes || [];
 
   const logoUrl: string | null = null;
-  const siteTitle = 'EduNews';
+  const siteTitle = 'Pahari Patrika';
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://edunews.com').replace(/\/$/, '');
-  const siteName = process.env.SITE_NAME || process.env.NEXT_PUBLIC_SITE_NAME || 'EduNews';
-  const orgName = process.env.ORGANIZATION_NAME || 'EduNews Media';
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://paharipatrika.in').replace(/\/$/, '');
+  const siteName = process.env.SITE_NAME || process.env.NEXT_PUBLIC_SITE_NAME || 'Pahari Patrika';
+  const orgName = process.env.ORGANIZATION_NAME || 'Pahari Patrika Media';
 
   const organizationSchema = JSON.stringify({
     "@context": "https://schema.org",
@@ -105,10 +106,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     },
     "sameAs": [
       // Add your actual social media URLs here
-      "https://twitter.com/edunews",
-      "https://www.facebook.com/edunews",
-      "https://www.youtube.com/@edunews",
-      "https://www.instagram.com/edunews"
+      "https://twitter.com/paharipatrika",
+      "https://www.facebook.com/paharipatrika",
+      "https://www.youtube.com/@paharipatrika",
+      "https://www.instagram.com/paharipatrika"
     ],
     "contactPoint": {
       "@type": "ContactPoint",
@@ -143,6 +144,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="theme-color" content="#b80000" />
         <link rel="preconnect" href={process.env.WP_GRAPHQL_ENDPOINT?.replace('/graphql', '') || ''} />
         <meta name="format-detection" content="telephone=no" />
+        
+        {/* Google AdSense */}
+        {process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID && (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}`}
+            crossOrigin="anonymous"
+          />
+        )}
+        
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: organizationSchema }}
@@ -156,6 +167,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Header logoUrl={logoUrl} siteTitle={siteTitle} categories={categories} />
         {children}
         <Footer />
+        
+        {/* Twitter/X Embeds Script */}
+        <Script
+          src="https://platform.twitter.com/widgets.js"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

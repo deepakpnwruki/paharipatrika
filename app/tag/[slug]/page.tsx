@@ -10,8 +10,32 @@ type TagPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export const revalidate = 300;
+export const revalidate = 600; // ISR: 10 minutes for tag pages
+export const dynamic = 'force-static';
 export const dynamicParams = true;
+
+// Pre-generate popular tags at build time
+export async function generateStaticParams() {
+  try {
+    const data = await wpFetch<{ tags: { nodes: Array<{ slug: string }> } }>(
+      `query PopularTags {
+        tags(first: 100) {
+          nodes {
+            slug
+          }
+        }
+      }`,
+      {},
+      3600
+    );
+    
+    return (data?.tags?.nodes || []).map((tag) => ({
+      slug: tag.slug,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 function _timeAgo(dateString?: string) {
   if (!dateString) return '';
@@ -51,7 +75,7 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
     const canonical = `${site}/tag/${slug}`;
     
     return {
-      title: `${tag.name} | ${process.env.SITE_NAME || 'EduNews'}`,
+      title: `${tag.name} | ${process.env.SITE_NAME || 'Pahari Patrika'}`,
       description: tag.description || `Articles tagged with ${tag.name}`,
       alternates: { canonical },
       robots: {
