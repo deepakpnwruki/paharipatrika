@@ -1,15 +1,7 @@
 import './globals.css';
-import { Inter } from 'next/font/google';
-// Set up Inter font with best practices
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
 import type { Metadata, Viewport } from 'next';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import Breadcrumbs from '../components/Breadcrumbs';
 import { wpFetch } from '../lib/graphql';
 import { CATEGORIES_QUERY } from '../lib/queries';
 
@@ -60,7 +52,7 @@ export const metadata: Metadata = {
     description: 'भारत की ताज़ा खबरें और समाचार',
     images: [
       {
-        url: '/og-image.jpg',
+        url: '/og-image.svg',
         width: 1200,
         height: 630,
         alt: process.env.SITE_NAME || 'EduNews',
@@ -72,7 +64,7 @@ export const metadata: Metadata = {
     title: `${process.env.SITE_NAME || 'EduNews'} - ताज़ा खबरें`,
     description: 'भारत की ताज़ा खबरें और समाचार',
     creator: '@edunews',
-    images: ['/og-image.jpg'],
+    images: ['/og-image.svg'],
   },
   manifest: '/manifest.webmanifest',
   icons: {
@@ -112,9 +104,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       "height": 60
     },
     "sameAs": [
-      // Add your social media URLs here
-      // "https://twitter.com/edunews",
-      // "https://facebook.com/edunews"
+      // Add your actual social media URLs here
+      "https://twitter.com/edunews",
+      "https://www.facebook.com/edunews",
+      "https://www.youtube.com/@edunews",
+      "https://www.instagram.com/edunews"
     ],
     "contactPoint": {
       "@type": "ContactPoint",
@@ -140,9 +134,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   });
 
   return (
-    <html lang="hi" dir="ltr" className={inter.className}>
+    <html lang="hi" dir="ltr">
       <head>
-        <link rel="alternate" hrefLang="hi-IN" href="/" />
         <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/feed.xml" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -160,10 +153,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body>
-  <Header logoUrl={logoUrl} siteTitle={siteTitle} categories={categories} />
-  {/* If Breadcrumbs is used globally, render here. Otherwise, keep import for code splitting. */}
-  {children}
-  <Footer />
+        <Header logoUrl={logoUrl} siteTitle={siteTitle} categories={categories} />
+        {children}
+        <Footer />
       </body>
     </html>
   );

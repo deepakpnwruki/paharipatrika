@@ -32,7 +32,7 @@
 .es-tag-content {
   width: 100%;
   background: #f8f9fa;
-  padding: 50px 0 80px;
+  padding: 28px 0 16px;
 }
 
 .es-tag-content__inner {
@@ -231,7 +231,7 @@
   }
   
   .es-tag-content {
-    padding: 35px 0 50px;
+    padding: 16px 0 12px;
   }
   
   .es-tag-content__inner {
@@ -324,7 +324,7 @@
   }
   
   .es-tag-content {
-    padding: 50px 0 80px;
+    padding: 32px 0 16px;
   }
   
   .es-tag-content__subtitle {

@@ -275,10 +275,32 @@ async function resolveNode(segments?: string[]) {
       '@type': node.__typename === 'Post' ? 'NewsArticle' : 'WebPage',
       headline: node.title,
       description: plainText(node?.excerpt ?? node?.content),
-      image: img?.sourceUrl ? { '@type': 'ImageObject', url: img.sourceUrl, width: 1200, height: 630 } : undefined,
+      image: img?.sourceUrl ? { 
+        '@type': 'ImageObject', 
+        url: absoluteUrl(img.sourceUrl, site), 
+        width: 1200, 
+        height: 630,
+        caption: plainText(img?.caption || img?.description || '', 240) || (img?.altText || '')
+      } : undefined,
+      thumbnailUrl: img?.sourceUrl ? absoluteUrl(img.sourceUrl, site) : undefined,
       datePublished: (node as any)?.date,
       dateModified: (node as any)?.modified,
-      author: node?.author?.node?.name ? { '@type': 'Person', name: node.author.node.name, url: `${site}/author/${node?.author?.node?.slug || 'team'}` } : undefined,
+      dateCreated: (node as any)?.date,
+      articleBody: plainText(node?.content),
+      speakable: {
+        '@type': 'SpeakableSpecification',
+        cssSelector: ['.es-title', '.en-content']
+      },
+      author: node?.author?.node?.name ? { 
+        '@type': 'Person', 
+        name: node.author.node.name, 
+        url: `${site}/author/${node?.author?.node?.slug || 'team'}`,
+        description: node.author.node.description || 'संवाददाता',
+        image: node.author.node.avatar?.url ? {
+          '@type': 'ImageObject',
+          url: node.author.node.avatar.url
+        } : undefined
+      } : undefined,
       publisher: { '@type': 'NewsMediaOrganization', name: process.env.ORGANIZATION_NAME || 'EduNews Media', logo: { '@type': 'ImageObject', url: `${site}/logo.png`, width: 600, height: 60 } },
       mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
       url: canonical,
@@ -286,6 +308,17 @@ async function resolveNode(segments?: string[]) {
       articleSection: node?.categories?.nodes?.[0]?.name,
       keywords: node?.tags?.nodes?.map((t: any) => t.name).join(', '),
       wordCount: plainText(node?.content).split(/\s+/).filter(Boolean).length
+    });
+
+    const breadcrumbSchema = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: breadcrumbs.map((crumb, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: crumb.name,
+        item: crumb.href ? `${site}${crumb.href}` : undefined
+      }))
     });
 
     function wrapTables(content: string): string {
@@ -312,20 +345,6 @@ async function resolveNode(segments?: string[]) {
     
     // Check author URL field first (WordPress default user profile field)
     const authorUrl = authorNode?.url || '';
-    
-    // Extract LinkedIn from various possible sources
-    const authorLinkedIn: string | undefined =
-      authorNode?.linkedin || 
-      authorNode?.linkedIn || 
-      authorNode?.social?.linkedin || 
-      authorNode?.social?.linkedIn ||
-      authorNode?.userMeta?.linkedin || 
-      authorNode?.userMeta?.linkedIn ||
-      (typeof authorUrl === 'string' && authorUrl.includes('linkedin.com') ? authorUrl : undefined) ||
-      // Also check if slug or description contains LinkedIn URL
-      (typeof authorNode?.description === 'string' && authorNode.description.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/)?.[0] 
-        ? `https://${authorNode.description.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/)?.[0]}` 
-        : undefined);
     
     const authorFacebook: string | undefined =
       authorNode?.facebook || 
@@ -362,6 +381,7 @@ async function resolveNode(segments?: string[]) {
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: schema }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbSchema }} />
         <main className="es-page">
           {/* ---------- HERO ---------- */}
           <section className="es-hero">
@@ -376,12 +396,19 @@ async function resolveNode(segments?: string[]) {
                       <div className="es-meta-left">
                         {node.author?.node?.name && (
                           <div className="es-byline">
-                            <span className="es-byline__name">By {node.author.node.name}</span>
-                            {authorLinkedIn && (
+                            <span className="es-byline__name">By </span>
+                            {node.author.node.slug ? (
+                              <Link href={`/author/${node.author.node.slug}`} className="es-byline__name es-byline__link">{node.author.node.name}</Link>
+                            ) : (
+                              <span className="es-byline__name">{node.author.node.name}</span>
+                            )}
+                            {authorUrl && (
                               <>
                                 <span className="es-pipe">|</span>
-                                <a href={authorLinkedIn} className="es-byline__ln" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile">
-                                  in
+                                <a href={authorUrl} className="es-byline__x" target="_blank" rel="noopener noreferrer" aria-label="X profile">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                                  </svg>
                                 </a>
                               </>
                             )}
@@ -401,18 +428,21 @@ async function resolveNode(segments?: string[]) {
                 </div>
               </div>
 
-              {img?.sourceUrl && (
-                <ImageCaption
-                  src={absoluteUrl(img.sourceUrl, site)}
-                  alt={img?.altText || node.title}
-                  width={768}
-                  height={432}
-                  priority
-                  sizes="(max-width: 768px) 100vw, 768px"
-                  className="es-hero__img"
-                  caption="Imago"
-                />
-              )}
+              {img?.sourceUrl && (() => {
+                const photoCaption = plainText(img?.caption || img?.description || '', 240) || (img?.altText || '');
+                return (
+                  <ImageCaption
+                    src={absoluteUrl(img.sourceUrl, site)}
+                    alt={img?.altText || node.title}
+                    width={768}
+                    height={432}
+                    priority
+                    sizes="(max-width: 768px) 100vw, 768px"
+                    className="es-hero__img"
+                    caption={photoCaption}
+                  />
+                );
+              })()}
             </div>
           </section>
 

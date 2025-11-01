@@ -379,3 +379,52 @@ export const TAG_BY_SLUG_QUERY = `
     }
   }
 `;
+
+// Footer menu queries (WPGraphQL)
+// Prefer fetching by location if your theme registers menu locations
+export const FOOTER_MENU_BY_LOCATION_QUERY = /* GraphQL */ `
+  query FooterMenuByLocation($location: MenuLocationEnum!) {
+    menuItems(where: { location: $location }, first: 100) {
+      nodes {
+        id
+        label
+        url
+        path
+        parentId
+        connectedNode {
+          node {
+            __typename
+            ... on ContentNode { uri }
+            ... on TermNode { uri }
+          }
+        }
+      }
+    }
+  }
+`;
+
+// Fallback: fetch by menu slug/name if locations are not set in WP
+export const FOOTER_MENU_BY_SLUG_QUERY = /* GraphQL */ `
+  query FooterMenuBySlug($slug: ID!, $idType: MenuNodeIdTypeEnum = SLUG) {
+    menu(id: $slug, idType: $idType) {
+      id
+      name
+      menuItems(first: 100) {
+        nodes {
+          id
+          label
+          url
+          path
+          parentId
+          connectedNode {
+            node {
+              __typename
+              ... on ContentNode { uri }
+              ... on TermNode { uri }
+            }
+          }
+        }
+      }
+    }
+  }
+`;

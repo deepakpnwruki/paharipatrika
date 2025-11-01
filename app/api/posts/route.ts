@@ -3,7 +3,7 @@ import { wpFetch } from '../../../lib/graphql';
 
 const HOMEPAGE_POSTS_QUERY = `
   query HomepagePosts {
-    posts(first: 10) {
+    posts(first: 25) {
       nodes {
         title
         slug
@@ -25,6 +25,7 @@ const HOMEPAGE_POSTS_QUERY = `
         author {
           node {
             name
+            slug
           }
         }
       }
@@ -32,7 +33,7 @@ const HOMEPAGE_POSTS_QUERY = `
   }
 `;
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 export async function GET() {
   try {

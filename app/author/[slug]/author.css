@@ -30,20 +30,8 @@
   width: 100%;
   margin-bottom: 1.2rem;
 }
-.author-articles-list-title-inline {
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  color: #111;
-  white-space: nowrap;
-  margin: 0 0 0 0.7rem;
-  display: inline-block;
-}
-.author-articles-list-divider-inline {
-  flex: 1;
-  border-bottom: 12px solid #ff4d4f;
-  margin-left: 0.9rem;
-}
+/* removed duplicate inline title variant to avoid conflicts */
+/* removed thick divider duplicate; keep the thin one below */
 .author-articles-list-divider-inline {
   flex: 1;
   border-bottom: 2px solid #ff4d4f;
@@ -61,7 +49,7 @@
 .author-articles-list {
   display: flex;
   flex-direction: column;
-  gap: 2.2rem;
+  gap: 1.2rem;
 }
 
 .author-article-card {
@@ -146,10 +134,17 @@
 .author-img {
   border-radius: 50%;
   border: 2px solid #fff;
-  width: 22px !important;
-  height: 22px !important;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
   background: #eee;
+}
+/* ring container around avatar used in markup */
+.author-img-border {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff4d4f, #ffa07a);
 }
 .author-info {
   display: flex;
@@ -214,11 +209,7 @@
   margin: 0.5rem 0 1.5rem 0;
   width: 100%;
 }
-.author-articles-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-}
+/* removed duplicate .author-articles-list block (using unified spacing above) */
 .author-article-item {
   font-size: 1.08rem;
 }
@@ -261,3 +252,31 @@
   line-height: 1.7;
   color: #222;
 }
+
+/* Social row/classes used by page.tsx */
+.author-social-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.author-social-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #111;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.author-social-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.author-social-fb { font-weight: 800; }
+.author-social-li { font-weight: 800; }
+.author-social-x  { font-weight: 800; }
