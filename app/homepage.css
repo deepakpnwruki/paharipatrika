@@ -1,14 +1,5 @@
-.hb-media {
-  border-radius: 14px !important;
-}
-.hb-mini-media {
-  border-radius: 12px !important;
-}
-.hp-card-media {
-  border-radius: 12px !important;
-}
-.hp-list-thumb {
-  border-radius: 8px !important;
+.hero-category-link:hover, .hero-author-link:hover {
+  text-decoration: underline;
 }
 .homepage {
   padding: 0;
@@ -205,7 +196,7 @@
 /* Media with halftone dots and red corner accent */
 .hb-media {
   position: relative;
-  background: #000;
+  background: #121215;
   aspect-ratio: 16/11;
   overflow: hidden;
 }

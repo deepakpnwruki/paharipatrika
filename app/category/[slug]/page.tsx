@@ -5,7 +5,7 @@ import { wpFetch } from '../../../lib/graphql';
 import { CATEGORY_BY_SLUG_QUERY } from '../../../lib/queries';
 import './category-page.css';
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -74,13 +74,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
+  // ...existing code...
   const { slug } = await params;
-  const { after } = await searchParams;
+  const sp = await searchParams;
+  // Safely extract 'page' from searchParams (string index signature)
+  const pageParam = (sp as Record<string, any>)["page"];
+  const page = pageParam ? Number(pageParam) : 1;
   const postsPerPage = 10;
+
+  // To get the correct 'after' cursor for the requested page, fetch all previous endCursors
+  let afterCursor: string | null = null;
+  if (page > 1) {
+    let lastCursor: string | null = null;
+    for (let i = 1; i < page; i++) {
+      const prevData: { category: any } = await wpFetch(
+        CATEGORY_BY_SLUG_QUERY,
+        { slug, first: postsPerPage, after: lastCursor },
+        revalidate
+      );
+      lastCursor = prevData?.category?.posts?.pageInfo?.endCursor || null;
+    }
+    afterCursor = lastCursor;
+  }
 
   const data = await wpFetch<{ category: any }>(
     CATEGORY_BY_SLUG_QUERY,
-    { slug, first: postsPerPage, after: after || null },
+    { slug, first: postsPerPage, after: afterCursor },
     revalidate
   );
 
@@ -91,6 +110,8 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const category = data.category;
   const posts = category.posts?.nodes ?? [];
   const pageInfo = category.posts?.pageInfo;
+  const totalPosts = category.count || 0;
+  const totalPages = Math.max(1, Math.ceil(totalPosts / postsPerPage));
   const siteUrl = (process.env.SITE_URL || '').replace(/\/$/, '');
   const firstPost = posts[0];
   const morePosts = posts.slice(1);
@@ -128,8 +149,16 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     }
   });
 
+  // SEO pagination rel links
+  const canonicalUrl = page === 1 ? `${siteUrl}${category.uri}` : `${siteUrl}${category.uri}?page=${page}`;
+  const prevUrl = page > 1 ? (page === 2 ? `${siteUrl}${category.uri}` : `${siteUrl}${category.uri}?page=${page - 1}`) : null;
+  const nextUrl = page < totalPages ? `${siteUrl}${category.uri}?page=${page + 1}` : null;
+
   return (
     <>
+      <link rel="canonical" href={canonicalUrl} />
+      {prevUrl && <link rel="prev" href={prevUrl} />}
+      {nextUrl && <link rel="next" href={nextUrl} />}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: structuredData }}
@@ -160,19 +189,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                 const isFirst = index === 0;
                 return (
                   <article key={post.slug} className={`cat-post ${isFirst ? 'cat-post--featured' : ''}`}>
-                    <Link href={
-                      post.uri
-                        ? post.uri.endsWith('/')
-                          ? post.uri
-                          : post.uri + '/'
-                        : `/${post.slug}/`
-                    } className="cat-post__link">
+                    <Link href={post.uri || `/${post.slug}`} className="cat-post__link">
                       {post.featuredImage?.node?.sourceUrl && (
                         <div className="cat-post__image">
                           <img
                             src={post.featuredImage.node.sourceUrl}
                             alt={post.featuredImage.node.altText || post.title}
-                            // loading removed
+                            loading={index < 3 ? 'eager' : 'lazy'}
                           />
                         </div>
                       )}
@@ -196,27 +219,99 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           )}
 
           {/* Pagination */}
-          {(pageInfo?.hasPreviousPage || pageInfo?.hasNextPage) && (
+          {totalPages > 1 && (
             <nav className="cat-pagination" aria-label="Pagination">
-              {pageInfo?.hasPreviousPage && (
-                <Link
-                  href={`${category.uri}`}
-                  className="cat-pagination__btn cat-pagination__prev"
-                  aria-label="Previous page"
-                >
-                  ‹
-                </Link>
-              )}
-              <span className="cat-pagination__current-page">Page</span>
-              {pageInfo?.hasNextPage && (
-                <Link
-                  href={`${category.uri}?after=${encodeURIComponent(pageInfo.endCursor)}`}
-                  className="cat-pagination__btn cat-pagination__next"
-                  aria-label="Next page"
-                >
-                  ›
-                </Link>
-              )}
+              {(() => {
+                // Get current page from searchParams (server-side)
+                let currentPage = 1;
+                if (typeof window === 'undefined') {
+                  if (page && !isNaN(Number(page))) {
+                    currentPage = Number(page);
+                  }
+                } else {
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const pageParam = urlParams.get('page');
+                  if (pageParam && !isNaN(Number(pageParam))) {
+                    currentPage = Number(pageParam);
+                  }
+                }
+                const maxPages = 5;
+                let start = Math.max(1, currentPage - Math.floor(maxPages / 2));
+                let end = start + maxPages - 1;
+                if (end > totalPages) {
+                  end = totalPages;
+                  start = Math.max(1, end - maxPages + 1);
+                }
+                // Prev button
+                if (currentPage > 1) {
+                  const prevHref = currentPage - 1 === 1 ? `${category.uri}` : `${category.uri}?page=${currentPage - 1}`;
+                  return (
+                    <>
+                      <Link
+                        href={prevHref}
+                        className="cat-pagination__btn cat-pagination__prev"
+                        aria-label="Previous page"
+                      >
+                        ‹
+                      </Link>
+                      {Array.from({ length: end - start + 1 }, (_, i) => {
+                        const pageNum = start + i;
+                        const isCurrent = pageNum === currentPage;
+                        const href = pageNum === 1 ? `${category.uri}` : `${category.uri}?page=${pageNum}`;
+                        return (
+                          <Link
+                            key={pageNum}
+                            href={href}
+                            className={`cat-pagination__page${isCurrent ? ' cat-pagination__page--current' : ''}`}
+                            style={{ color: '#fff', background: isCurrent ? '#ff4d4f' : 'transparent', borderRadius: '4px', padding: '0.2em 0.7em', margin: '0 2px', fontWeight: isCurrent ? 700 : 400 }}
+                          >
+                            {pageNum}
+                          </Link>
+                        );
+                      })}
+                      {currentPage < totalPages && (
+                        <Link
+                          href={`${category.uri}?page=${currentPage + 1}`}
+                          className="cat-pagination__btn cat-pagination__next"
+                          aria-label="Next page"
+                        >
+                          ›
+                        </Link>
+                      )}
+                    </>
+                  );
+                } else {
+                  // No prev button on first page
+                  return (
+                    <>
+                      {Array.from({ length: end - start + 1 }, (_, i) => {
+                        const pageNum = start + i;
+                        const isCurrent = pageNum === currentPage;
+                        const href = pageNum === 1 ? `${category.uri}` : `${category.uri}?page=${pageNum}`;
+                        return (
+                          <Link
+                            key={pageNum}
+                            href={href}
+                            className={`cat-pagination__page${isCurrent ? ' cat-pagination__page--current' : ''}`}
+                            style={{ color: '#fff', background: isCurrent ? '#ff4d4f' : 'transparent', borderRadius: '4px', padding: '0.2em 0.7em', margin: '0 2px', fontWeight: isCurrent ? 700 : 400 }}
+                          >
+                            {pageNum}
+                          </Link>
+                        );
+                      })}
+                      {currentPage < totalPages && (
+                        <Link
+                          href={`${category.uri}?page=${currentPage + 1}`}
+                          className="cat-pagination__btn cat-pagination__next"
+                          aria-label="Next page"
+                        >
+                          ›
+                        </Link>
+                      )}
+                    </>
+                  );
+                }
+              })()}
             </nav>
           )}
         </div>

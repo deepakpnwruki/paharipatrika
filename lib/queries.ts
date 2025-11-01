@@ -1,3 +1,45 @@
+// Query for author details and their posts by slug
+export const AUTHOR_BY_SLUG_QUERY = `
+  query AuthorBySlug($slug: ID!, $first: Int = 10, $after: String) {
+    user(id: $slug, idType: SLUG) {
+      id
+      name
+      slug
+      description
+      url
+      avatar {
+        url
+      }
+      posts(first: $first, after: $after) {
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        nodes {
+          title
+          excerpt
+          slug
+          date
+          uri
+          featuredImage {
+            node {
+              sourceUrl
+              altText
+            }
+          }
+          categories {
+            nodes {
+              name
+              slug
+            }
+          }
+        }
+      }
+    }
+  }
+`;
 export const POSTS_QUERY = /* GraphQL */ `
   query Posts($first: Int!, $after: String) {
     posts(first: $first, after: $after, where: { orderby: { field: DATE, order: DESC } }) {
@@ -38,6 +80,11 @@ export const NODE_BY_URI_QUERY = `
             url
             avatar {
               url
+            }
+            ... on User {
+              linkedin: databaseId
+              facebook: databaseId
+              twitter: databaseId
             }
           }
         }
@@ -219,6 +266,7 @@ export const CATEGORY_BY_SLUG_QUERY = `
       description
       slug
       uri
+      count
       posts(first: $first, after: $after) {
         pageInfo {
           hasNextPage

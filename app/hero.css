@@ -1,0 +1,91 @@
+/* Hero Redesign for Homepage */
+.hero-section {
+  background: none;
+  border-radius: 0;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 2.5rem;
+}
+.hero-image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #222;
+  overflow: hidden;
+  border-radius: 0;
+}
+.hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hero-corner {
+  position: absolute;
+  top: 0; right: 0;
+  width: 54px; height: 54px;
+  background: none;
+  z-index: 2;
+}
+.hero-corner svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hero-exclusive {
+  position: absolute;
+  left: 1.5rem;
+  bottom: 1.5rem;
+  background: #111;
+  color: #fff;
+  font-weight: 900;
+  font-size: 1.1rem;
+  padding: 0.3rem 1.1rem;
+  border-radius: 6px;
+  border: 3px solid #e73c3c;
+  letter-spacing: 0.03em;
+  z-index: 2;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+}
+.hero-content {
+  padding: 2.2rem 2.2rem 2.5rem 2.2rem;
+  background: none;
+}
+.hero-category {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.hero-category-underline {
+  display: inline-block;
+  width: 32px;
+  height: 4px;
+  background: #e73c3c;
+  border-radius: 2px;
+  margin-left: 0.5rem;
+}
+.hero-title {
+  color: #fff;
+  font-size: 2.1rem;
+  font-weight: 900;
+  margin: 0.5rem 0 1.2rem 0;
+  line-height: 1.22;
+}
+.hero-meta {
+  color: #b0b0b0;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.hero-meta .hero-dot {
+  font-size: 1.2rem;
+  color: #e73c3c;
+}

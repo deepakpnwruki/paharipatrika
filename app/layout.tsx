@@ -1,4 +1,11 @@
 import './globals.css';
+import { Inter } from 'next/font/google';
+// Set up Inter font with best practices
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 import type { Metadata, Viewport } from 'next';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -133,7 +140,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   });
 
   return (
-    <html lang="hi" dir="ltr">
+    <html lang="hi" dir="ltr" className={inter.className}>
       <head>
         <link rel="alternate" hrefLang="hi-IN" href="/" />
         <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/feed.xml" />

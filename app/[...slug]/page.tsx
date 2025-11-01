@@ -264,10 +264,10 @@ async function resolveNode(segments?: string[]) {
     const canonical = `${site}${node?.uri || '/' + (slug || []).join('/')}`;
 
     const primaryCategory = node?.categories?.nodes?.[0];
+    // Only show Home and Category in breadcrumbs for article page
     const breadcrumbs = [
       { name: 'Home', href: '/' },
-      ...(primaryCategory?.slug ? [{ name: primaryCategory.name, href: `/category/${primaryCategory.slug}` }] : []),
-      { name: node.title || 'Article' }
+      ...(primaryCategory?.slug ? [{ name: primaryCategory.name, href: `/category/${primaryCategory.slug}` }] : [])
     ];
 
     const schema = JSON.stringify({
@@ -340,7 +340,9 @@ async function resolveNode(segments?: string[]) {
                       <div className="es-meta-left">
                         {node.author?.node?.name && (
                           <div className="es-byline">
-                            <span className="es-byline__name">By {node.author.node.name}</span>
+                            <span className="es-byline__name">
+                              By <Link href={`/author/${node.author.node.slug}`}>{node.author.node.name}</Link>
+                            </span>
                             {authorWebsite && (
                               <>
                                 <span className="es-pipe" style={{ margin: '0 -1px 0 1px', verticalAlign: 'middle' }}>|</span>
