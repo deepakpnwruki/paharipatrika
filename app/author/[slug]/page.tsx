@@ -1,6 +1,7 @@
 import { wpFetch } from '../../../lib/graphql';
 import { AUTHOR_BY_SLUG_QUERY } from '../../../lib/queries';
 import Link from 'next/link';
+import Image from 'next/image';
 import './author.css';
 
 type Props = {
@@ -67,8 +68,16 @@ export default async function AuthorPage({ params }: Props) {
         <div className="author-avatar">
           {author.avatar?.url && (
             <span className="author-img-border">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="author-img" src={author.avatar.url} alt={author.name} />
+              <div style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '50%', overflow: 'hidden' }}>
+                <Image 
+                  src={author.avatar.url} 
+                  alt={author.name} 
+                  fill
+                  sizes="120px"
+                  style={{ objectFit: 'cover' }}
+                  priority
+                />
+              </div>
             </span>
           )}
         </div>

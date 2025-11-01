@@ -1,8 +1,7 @@
-
 "use client";
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 
 interface Category {
   name: string;
@@ -17,7 +16,6 @@ interface HeaderProps {
 
 export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: HeaderProps) {
   const siteName = siteTitle || process.env.SITE_NAME || 'EduNews';
-  const [menuOpen, setMenuOpen] = useState(false);
   const logoSrc = _logoUrl || process.env.NEXT_PUBLIC_SITE_LOGO || process.env.SITE_LOGO_URL || '/logo.svg';
   const logoWidth = Number(process.env.NEXT_PUBLIC_LOGO_WIDTH || 180);
   const logoHeight = Number(process.env.NEXT_PUBLIC_LOGO_HEIGHT || 40);
@@ -30,7 +28,6 @@ export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: Hea
     const nav = document.querySelector('.en-nav-bar') as HTMLElement;
     if (!nav) return;
 
-    let lastScroll = 0;
     const navOffset = nav.offsetTop;
 
     const handleScroll = () => {
@@ -49,8 +46,6 @@ export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: Hea
         nav.style.top = '';
         nav.style.boxShadow = '';
       }
-      
-      lastScroll = currentScroll;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -67,7 +62,6 @@ export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: Hea
               type="button"
               className="en-menu-btn"
               aria-label="मेनू"
-              onClick={() => setMenuOpen((v) => !v)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false">
                 <path d="M3 6.25a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 6.25Zm0 5.75c0-.414.336-.75.75-.75h16.5a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75Zm.75 5a.75.75 0 0 0 0 1.5h16.5a.75.75 0 0 0 0-1.5H3.75Z"/>
@@ -110,7 +104,7 @@ export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: Hea
             <Link href="/account" className="en-profile-btn" aria-label="प्रोफ़ाइल">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
                 <path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d="M12 2.5C6.75329 2.5 2.5 6.75329 2.5 12C2.5 17.2467 6.75329 21.5 12 21.5C17.2467 21.5 21.5 17.2467 21.5 12C21.5 6.75329 17.2467 2.5 12 2.5ZM1.5 12C1.5 6.20101 6.20101 1.5 12 1.5C17.799 1.5 22.5 6.20101 22.5 12C22.5 17.799 17.799 22.5 12 22.5C6.20101 22.5 1.5 17.799 1.5 12Z" />
-                <path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d="M12 6.5C10.6193 6.5 9.5 7.61929 9.5 9 9.5 10.3807 10.6193 11.5 12 11.5 13.3807 11.5 14.5 10.3807 14.5 9 14.5 7.61929 13.3807 6.5 12 6.5zM8.5 9C8.5 7.067 10.067 5.5 12 5.5 13.933 5.5 15.5 7.067 15.5 9 15.5 10.933 13.933 12.5 12 12.5 10.067 12.5 8.5 10.933 8.5 9zM12.0004 14.5C8.95014 14.5 6.38947 16.6015 5.6896 19.4364L4.71875 19.1967C5.52627 15.9258 8.47943 13.5 12.0004 13.5 15.5214 13.5 18.4746 15.9258 19.2821 19.1967L18.3112 19.4364C17.6114 16.6015 15.0507 14.5 12.0004 14.5z" />
+                <path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d="M12 6.5C10.6193 6.5 9.5 7.61929 9.5 9C9.5 10.3807 10.6193 11.5 12 11.5C13.3807 11.5 14.5 10.3807 14.5 9C14.5 7.61929 13.3807 6.5 12 6.5zM8.5 9C8.5 7.067 10.067 5.5 12 5.5C13.933 5.5 15.5 7.067 15.5 9C15.5 10.933 13.933 12.5 12 12.5C10.067 12.5 8.5 10.933 8.5 9zM12.0004 14.5C8.95014 14.5 6.38947 16.6015 5.6896 19.4364L4.71875 19.1967C5.52627 15.9258 8.47943 13.5 12.0004 13.5C15.5214 13.5 18.4746 15.9258 19.2821 19.1967L18.3112 19.4364C17.6114 16.6015 15.0507 14.5 12.0004 14.5z" />
               </svg>
             </Link>
           </div>

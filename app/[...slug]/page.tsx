@@ -1,5 +1,6 @@
 import type { Metadata, ResolvingMetadata } from 'next';
 import { notFound } from 'next/navigation';
+import Image from 'next/image';
 import { wpFetch } from '../../lib/graphql';
 import {
   NODE_BY_URI_QUERY,
@@ -11,7 +12,6 @@ import ShareButtons from '../../components/ShareButtons';
 import ImageCaption from '../../components/ImageCaption';
 import Link from 'next/link';
 import Breadcrumbs from '../../components/Breadcrumbs';
-import Image from 'next/image';
 import './article.css';
 
 type ParamPromise = Promise<{ slug?: string[] }>;
@@ -240,8 +240,16 @@ async function resolveNode(segments?: string[]) {
             {posts.map((p: any) => (
               <Link href={`/${p.slug}`} key={p.slug} className="es-card">
                 {p.featuredImage?.node?.sourceUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.featuredImage.node.sourceUrl} alt={p.featuredImage.node.altText || p.title} loading="lazy" />
+                  <div style={{ position: 'relative', width: '100%', height: '200px' }}>
+                    <Image 
+                      src={p.featuredImage.node.sourceUrl} 
+                      alt={p.featuredImage.node.altText || p.title} 
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      style={{ objectFit: 'cover' }}
+                      loading="lazy"
+                    />
+                  </div>
                 )}
                 <h3 className="es-card__title">{p.title}</h3>
                 {p.excerpt && <div className="es-card__excerpt" dangerouslySetInnerHTML={{ __html: p.excerpt }} />}
@@ -508,8 +516,16 @@ async function resolveNode(segments?: string[]) {
               {node.author?.node && (
                 <div className="es-author">
                   {node.author.node.avatar?.url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={node.author.node.avatar.url} alt={node.author.node.name} className="es-author__img" />
+                    <div style={{ position: 'relative', width: '48px', height: '48px', borderRadius: '50%', overflow: 'hidden' }}>
+                      <Image 
+                        src={node.author.node.avatar.url} 
+                        alt={node.author.node.name} 
+                        fill
+                        sizes="48px"
+                        style={{ objectFit: 'cover' }}
+                        className="es-author__img" 
+                      />
+                    </div>
                   )}
                   <div className="es-author__info">
                     <div className="es-author__name">

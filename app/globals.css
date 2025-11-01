@@ -21,7 +21,13 @@
   --en-dark: #2c2c2c;
   --border: #e4e4e4;
   --bg: #ffffff;
-  --en-font: "Reith Sans", Arial, Helvetica, freesans, sans-serif;
+  --en-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Skeleton Loader Animation */
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 * { 

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import './homepage.css';
+import Skeleton from '../components/Skeleton';
 
 interface PostNode {
   title: string;
@@ -77,8 +78,24 @@ export default function Home() {
     return (
       <main className="homepage">
         <div className="container">
-          <div className="loading-state">
-            <div className="spinner"></div>
+          <div className="featured-column">
+            {/* Large Featured Card Skeleton */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <Skeleton height={400} style={{ marginBottom: '1rem' }} />
+              <Skeleton height={30} width="80%" style={{ marginBottom: '0.5rem' }} />
+              <Skeleton height={20} width="40%" />
+            </div>
+            
+            {/* Secondary Grid Skeletons */}
+            <div className="secondary-grid" style={{ marginBottom: '2rem' }}>
+              {[1, 2, 3].map((i) => (
+                <div key={i}>
+                  <Skeleton height={200} style={{ marginBottom: '0.5rem' }} />
+                  <Skeleton height={24} width="90%" style={{ marginBottom: '0.5rem' }} />
+                  <Skeleton height={16} width="50%" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </main>
@@ -148,7 +165,7 @@ export default function Home() {
 
           {/* Secondary Featured Cards */}
           <div className="secondary-grid">
-            {secondaryPosts.map((post) => (
+            {secondaryPosts.map((post, index) => (
               <Link 
                 key={post.slug} 
                 href={post.uri || `/${post.slug}`} 
@@ -161,6 +178,7 @@ export default function Home() {
                       alt={post.featuredImage?.node?.altText || post.title}
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 992px) 50vw, 380px"
+                      priority={index === 0}
                       style={{ objectFit: 'cover' }}
                     />
                   )}
