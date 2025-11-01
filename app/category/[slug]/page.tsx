@@ -68,7 +68,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description,
       },
     };
-  } catch (error) {
+  } catch {
     return { title: 'Category not found' };
   }
 }
@@ -109,12 +109,12 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   const category = data.category;
   const posts = category.posts?.nodes ?? [];
-  const pageInfo = category.posts?.pageInfo;
+  const _pageInfo = category.posts?.pageInfo;
   const totalPosts = category.count || 0;
   const totalPages = Math.max(1, Math.ceil(totalPosts / postsPerPage));
   const siteUrl = (process.env.SITE_URL || '').replace(/\/$/, '');
-  const firstPost = posts[0];
-  const morePosts = posts.slice(1);
+  const _firstPost = posts[0];
+  const _morePosts = posts.slice(1);
 
   const structuredData = JSON.stringify({
     "@context": "https://schema.org",
@@ -192,6 +192,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                     <Link href={post.uri || `/${post.slug}`} className="cat-post__link">
                       {post.featuredImage?.node?.sourceUrl && (
                         <div className="cat-post__image">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={post.featuredImage.node.sourceUrl}
                             alt={post.featuredImage.node.altText || post.title}

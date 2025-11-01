@@ -3,7 +3,7 @@ import { wpFetch } from '../../../lib/graphql';
 import { PAGE_BY_URI_QUERY, POST_BY_URI_QUERY } from '../../../lib/queries';
 import type { Metadata } from 'next';
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 function candidates(segments: string[]) {
   // WordPress pages use URIs like /about/, /contact/, not /pages/about/
@@ -41,7 +41,6 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
   const uris = candidates(slug);
   
   let page: any = null;
-  let isPost = false;
 
   // First try to find as a page
   for (const uri of uris) {
@@ -51,7 +50,7 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
         page = data.pageBy;
         break;
       }
-    } catch (e) {
+    } catch {
       // Continue to next URI
     }
   }
@@ -65,7 +64,7 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
           // Redirect to the post route (without /pages/ prefix)
           redirect(`/${slug.join('/')}`);
         }
-      } catch (e) {
+      } catch {
         // Continue
       }
     }

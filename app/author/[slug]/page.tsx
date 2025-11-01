@@ -45,7 +45,7 @@ export default async function AuthorPage({ params }: Props) {
         { slug, first: 20 },
         300
       );
-    } catch (e) {
+    } catch {
       error = 'Author not found.';
     }
     if (!error && (!data?.user)) {
@@ -67,6 +67,7 @@ export default async function AuthorPage({ params }: Props) {
         <div className="author-avatar">
           {author.avatar?.url && (
             <span className="author-img-border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="author-img" src={author.avatar.url} alt={author.name} />
             </span>
           )}
@@ -125,6 +126,7 @@ export default async function AuthorPage({ params }: Props) {
                 </div>
                 {post.featuredImage?.node?.sourceUrl && (
                   <div className="author-article-image-wrapper" style={{ flexShrink: 0, width: 100, height: 100, borderRadius: '0 18px 0 0', overflow: 'hidden', background: '#eee', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       className="author-article-image"
                       src={post.featuredImage.node.sourceUrl}

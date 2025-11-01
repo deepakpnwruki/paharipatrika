@@ -17,7 +17,7 @@ export function generateArticleSchema({
   dateModified,
   authorName,
   url,
-  siteName,
+  siteName: _siteName,
 }: ArticleSchemaProps): string {
   const siteUrl = process.env.SITE_URL || 'https://edunews.com';
   const orgName = process.env.ORGANIZATION_NAME || 'EduNews Media';

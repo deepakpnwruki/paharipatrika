@@ -10,10 +10,10 @@ type TagPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export const revalidate = 60;
+export const revalidate = 300;
 export const dynamicParams = true;
 
-function timeAgo(dateString?: string) {
+function _timeAgo(dateString?: string) {
   if (!dateString) return '';
   const then = new Date(dateString).getTime();
   const now = Date.now();
@@ -116,12 +116,12 @@ export default async function TagPage({ params }: TagPageProps) {
               {posts.map((post: any, index: number) => {
                 const href = post.uri || `/${post.slug}`;
                 const imgUrl = post.featuredImage?.node?.sourceUrl;
-                const category = post.categories?.nodes?.[0];
+                const _category = post.categories?.nodes?.[0];
                 const isFirstPost = index === 0;
                 
                 return (
                   <article key={post.slug} className={`es-tag-post ${isFirstPost ? 'es-tag-post--featured' : ''}`}>
-                    <Link href={href.endsWith('/') ? href : href + '/'} className="es-tag-post__link">
+                    <Link href={href} className="es-tag-post__link">
                       <div className="es-tag-post__content">
                         {!isFirstPost && (
                           <span className="es-tag-post__badge-top">NEWS</span>

@@ -1,11 +1,6 @@
 import { Metadata } from 'next';
 import { SEOData } from '../lib/seo';
 
-interface SEOHeadProps {
-  seoData: SEOData;
-  structuredData?: any[];
-}
-
 export function generateMetadata(seoData: SEOData): Metadata {
   return {
     title: seoData.title,

@@ -1,6 +1,6 @@
 export function generateOrganizationSchema() {
   const siteUrl = process.env.SITE_URL!;
-  const siteName = process.env.SITE_NAME!;
+  const _siteName = process.env.SITE_NAME!;
   const orgName = process.env.ORGANIZATION_NAME!;
 
   return {

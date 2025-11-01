@@ -79,7 +79,7 @@ export default function Home() {
 
   const featured = posts[0];
   const latest = posts.slice(1, 7);
-  const remaining = posts.slice(7);
+  const _remaining = posts.slice(7);
 
   return (
     <main className="homepage" style={{ minHeight: '100vh', background: '#090909' }}>
@@ -89,6 +89,7 @@ export default function Home() {
           <section className="hero-section" style={{ overflow: 'hidden', marginBottom: '0', background: '#090909', borderRadius: '0 0 18px 18px' }}>
             <div className="hero-image-wrap" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: '#222', overflow: 'hidden', borderRadius: '0 0 18px 18px' }}>
               <Link href={featured.uri || `/${featured.slug}`} style={{ display: 'block', textDecoration: 'none' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   className="hero-image"
                   src={featured.featuredImage?.node?.sourceUrl || ''}
@@ -127,7 +128,7 @@ export default function Home() {
               <time dateTime={featured.date} style={{ color: '#b0b0b0' }}>{timeAgo(featured.date)}</time>
             </div>
           </section>
-  )}
+        )}
 
         {latest.length > 0 && (
           <section className="latest-news-section" style={{ marginTop: '0', marginBottom: '2.5rem', background: '#090909', borderRadius: 12, boxShadow: '0 2px 16px 0 rgba(0,0,0,0.08)' }}>
@@ -168,6 +169,7 @@ export default function Home() {
                     </div>
                   </div>
                   {post.featuredImage?.node?.sourceUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={post.featuredImage.node.sourceUrl}
                       alt={post.featuredImage.node.altText || post.title}
@@ -215,6 +217,15 @@ export default function Home() {
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
 
 
 
