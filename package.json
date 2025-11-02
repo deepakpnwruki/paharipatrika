@@ -12,6 +12,9 @@
     "build:analyze": "ANALYZE=true next build",
     "test": "echo \"Add your test command here\" && exit 0"
   },
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "graphql": "latest",
     "next": "latest",
