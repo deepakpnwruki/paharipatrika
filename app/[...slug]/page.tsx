@@ -453,7 +453,6 @@ async function resolveNode(segments?: string[]) {
     return (
       <>
   <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: schema }} />
-  <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbSchema }} />
         <main className="es-page">
           {/* ---------- HERO ---------- */}
           <section className="es-hero">
