@@ -1,13 +1,15 @@
 import { wpFetch } from '../../../lib/graphql';
-import { AUTHOR_BY_SLUG_QUERY } from '../../../lib/queries';
+import { AUTHOR_BY_SLUG_QUERY, AUTHOR_POST_COUNT_QUERY } from '../../../lib/queries';
 import { generateAuthorProfileSchema } from '../../../lib/structured-data';
+import { getPostUrl } from '../../../lib/url-helpers';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
+import AuthorPostsList from '../../../components/AuthorPostsList';
 import './author.css';
 
-export const revalidate = 600; // ISR: 10 minutes for author pages (less dynamic)
-export const dynamic = 'force-static';
+export const revalidate = 600; // ISR: 10 minutes for author pages
+export const dynamic = 'force-static'; // Static generation with Load More
 export const dynamicParams = true;
 
 // Pre-generate top authors at build time
@@ -37,23 +39,6 @@ type Props = {
   params: { slug: string };
 };
 
-function timeAgo(dateString?: string) {
-  if (!dateString) return '';
-  const then = new Date(dateString).getTime();
-  const now = Date.now();
-  const diff = Math.max(0, now - then);
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes || 1} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hrs ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} days ago`;
-  const weeks = Math.floor(days / 7);
-  if (weeks < 4) return `${weeks} wks ago`;
-  const months = Math.floor(days / 30);
-  return `${months} mo ago`;
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await Promise.resolve(params);
   const slug = resolvedParams.slug;
@@ -73,7 +58,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: `${author.name} - ${process.env.ORGANIZATION_NAME || 'Pahari Patrika Media'}`,
       description,
-      alternates: { canonical: authorUrl },
+      alternates: { 
+        canonical: authorUrl,
+        languages: {
+          'hi-IN': authorUrl,
+        }
+      },
+      authors: [{ name: author.name, url: authorUrl }],
       robots: {
         index: true,
         follow: true,
@@ -89,6 +80,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description,
         url: authorUrl,
         type: 'profile',
+        locale: 'hi_IN',
+        siteName: process.env.ORGANIZATION_NAME || 'Pahari Patrika Media',
         images: author.avatar?.url ? [{
           url: author.avatar.url,
           width: 400,
@@ -109,22 +102,56 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function AuthorPage({ params }: Props) {
-  // Next.js 15+: params is always a Promise
   const resolvedParams = await params;
   const slug = resolvedParams?.slug;
+  const postsPerPage = 20;
+  
   let error: string | null = null;
   let author: any = null;
-  let posts: any[] = [];
+  let initialPosts: any[] = [];
+  let hasNextPage = false;
+  let endCursor: string | null = null;
+  let totalCount = 0;
 
   if (!slug || typeof slug !== 'string') {
     error = 'Author not found.';
   } else {
+    // Fetch total count by paginating through all posts (WordPress limits to 100 per query)
+    try {
+      let allPostIds: string[] = [];
+      let afterCursor: string | null = null;
+      let hasMore: boolean = true;
+      let iterations = 0;
+      const maxIterations = 50; // Safety limit: max 5000 posts (50 * 100)
+
+      while (hasMore && iterations < maxIterations) {
+        const batchData: { user: any } = await wpFetch<{ user: any }>(
+          AUTHOR_POST_COUNT_QUERY,
+          { slug, first: 100, after: afterCursor },
+          revalidate
+        );
+        
+        const posts = batchData?.user?.posts?.nodes || [];
+        allPostIds.push(...posts.map((p: any) => p.id));
+        
+        hasMore = batchData?.user?.posts?.pageInfo?.hasNextPage || false;
+        afterCursor = batchData?.user?.posts?.pageInfo?.endCursor || null;
+        iterations++;
+      }
+      
+      totalCount = allPostIds.length;
+    } catch (e) {
+      console.error('Failed to fetch author post count:', e);
+      totalCount = 0;
+    }
+
+    // Then get the first page of posts
     let data: { user: any } | null = null;
     try {
       data = await wpFetch<{ user: any }>(
         AUTHOR_BY_SLUG_QUERY,
-        { slug, first: 20 },
-        300
+        { slug, first: postsPerPage, after: null },
+        revalidate
       );
     } catch {
       error = 'Author not found.';
@@ -134,7 +161,9 @@ export default async function AuthorPage({ params }: Props) {
     }
     if (!error && data?.user) {
       author = data.user;
-      posts = author.posts?.nodes || [];
+      initialPosts = author.posts?.nodes || [];
+      hasNextPage = author.posts?.pageInfo?.hasNextPage || false;
+      endCursor = author.posts?.pageInfo?.endCursor || null;
     }
   }
 
@@ -144,6 +173,32 @@ export default async function AuthorPage({ params }: Props) {
 
   const siteUrl = (process.env.SITE_URL || 'https://edunews.com').replace(/\/$/, '');
   const authorSchema = generateAuthorProfileSchema(author, siteUrl);
+  
+  // Breadcrumb schema for SEO
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: siteUrl,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Authors',
+        item: `${siteUrl}/author`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: author.name,
+        item: `${siteUrl}/author/${slug}`,
+      },
+    ],
+  };
 
   return (
     <main className="author-page">
@@ -151,6 +206,12 @@ export default async function AuthorPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(authorSchema) }}
+      />
+      
+      {/* Breadcrumb structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       
       <section className="author-hero">
@@ -171,8 +232,10 @@ export default async function AuthorPage({ params }: Props) {
           )}
         </div>
         <div className="author-info">
-          <div className="author-name">{author.name}</div>
-          <span className="author-articles-count">{posts.length} Articles</span>
+          <h1 className="author-name">{author.name}</h1>
+          <span className="author-articles-count">
+            {totalCount > 0 ? `${totalCount} Article${totalCount !== 1 ? 's' : ''}` : `${initialPosts.length} Article${initialPosts.length !== 1 ? 's' : ''}`}
+          </span>
         </div>
       </section>
 
@@ -193,52 +256,32 @@ export default async function AuthorPage({ params }: Props) {
               <span className="author-social-li">in</span>
             </a>
           )}
-          {author.xUrl && (
-            <a href={author.xUrl} className="author-social-icon" target="_blank" rel="noopener noreferrer" aria-label="X">
-              <span className="author-social-x">X</span>
+          {author.twitterUrl && (
+            <a href={author.twitterUrl} className="author-social-icon" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+              <span className="author-social-tw">𝕏</span>
             </a>
           )}
         </div>
       </section>
 
       <section className="author-articles-list-section">
-  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.2rem', width: '100%' }}>
-    <span style={{ fontSize: '1.08rem', fontWeight: 900, letterSpacing: '0.01em', color: '#111', textTransform: 'uppercase', marginTop: 0, marginLeft: 0, whiteSpace: 'nowrap', lineHeight: 1 }}>
-      Articles by Author
-    </span>
-    <span style={{ flex: 1, height: 4, background: '#e5736a', borderRadius: 2, marginLeft: 18, display: 'block' }} />
-  </div>
-        <div className="author-articles-list">
-          {posts.length === 0 ? (
-            <div className="author-no-articles">No articles found.</div>
-          ) : (
-            posts.map((post: any) => (
-              <div className="author-article-card" key={post.slug} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1.5rem', borderRadius: 12, background: '#fff', boxShadow: 'none', padding: '0 0 0.5rem 0' }}>
-                <div className="author-article-content" style={{ flex: '1 1 0%', minWidth: 0 }}>
-                  <Link href={post.uri || `/${post.slug}`} className="author-article-title" style={{ fontSize: '1.18rem', fontWeight: 700, color: '#111', textDecoration: 'none', marginBottom: '0.3rem', display: 'block', lineHeight: 1.3 }}>
-                    {post.title}
-                  </Link>
-                  <div className="author-article-meta" style={{ color: '#b0b0b0', fontSize: '0.98rem', marginTop: '0.2rem' }}>
-                    <span>{timeAgo(post.date)}</span>
-                  </div>
-                </div>
-                {post.featuredImage?.node?.sourceUrl && (
-                  <div className="author-article-image-wrapper" style={{ flexShrink: 0, width: 100, height: 100, borderRadius: '0 18px 0 0', overflow: 'hidden', background: '#eee', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      className="author-article-image"
-                      src={post.featuredImage.node.sourceUrl}
-                      alt={post.featuredImage.node.altText || post.title}
-                      width={100}
-                      height={100}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0 18px 0 0', display: 'block' }}
-                    />
-                  </div>
-                )}
-              </div>
-            ))
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.2rem', width: '100%' }}>
+          <span style={{ fontSize: '1.08rem', fontWeight: 900, letterSpacing: '0.01em', color: '#111', textTransform: 'uppercase', marginTop: 0, marginLeft: 0, whiteSpace: 'nowrap', lineHeight: 1 }}>
+            Articles by Author
+          </span>
+          <span style={{ flex: 1, height: 4, background: '#e5736a', borderRadius: 2, marginLeft: 18, display: 'block' }} />
         </div>
+        
+        {initialPosts.length === 0 ? (
+          <div className="author-no-articles">No articles found.</div>
+        ) : (
+          <AuthorPostsList
+            initialPosts={initialPosts}
+            hasNextPage={hasNextPage}
+            endCursor={endCursor}
+            authorSlug={slug}
+          />
+        )}
       </section>
     </main>
   );

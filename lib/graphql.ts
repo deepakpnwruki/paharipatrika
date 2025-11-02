@@ -12,7 +12,8 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
   const rv = revalidate ?? Number(process.env.REVALIDATE_SECONDS ?? 300);
 
   // NEW: timeout + retry
-  const timeoutMs = Number(process.env.WP_GRAPHQL_TIMEOUT_MS ?? 15000); // Increased to 15s for build time
+  // Prefer WP_GRAPHQL_TIMEOUT_MS; fall back to WP_FETCH_TIMEOUT_MS, then default
+  const timeoutMs = Number(process.env.WP_GRAPHQL_TIMEOUT_MS ?? process.env.WP_FETCH_TIMEOUT_MS ?? 10000);
   const maxRetries = Number(process.env.WP_FETCH_RETRIES ?? 3); // Increased retries
 
   // Extract query name for logging

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { wpFetch } from '../../../lib/graphql';
 import { CATEGORY_BY_SLUG_QUERY } from '../../../lib/queries';
+import { getPostUrl } from '../../../lib/url-helpers';
 
 interface CategoryData {
   categories: {
@@ -53,7 +54,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
       <div className="container bbc-posts-grid">
         {category.posts?.nodes?.map((post: any) => (
-          <Link href={`/${post.slug}`} key={post.slug} className="bbc-post-card">
+          <Link href={getPostUrl(post)} key={post.slug} className="bbc-post-card">
             {post.featuredImage?.node?.sourceUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img

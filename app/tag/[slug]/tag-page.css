@@ -1,19 +1,21 @@
-/* Tag Page Styles */
+/* Tag Page Styles - Uniform List Layout Like Screenshot */
 .es-tag-page {
   width: 100%;
-  background: #f8f9fa;
+  background: #f5f5f5;
+  min-height: 100vh;
 }
 
 /* Header Section */
 .es-tag-header {
   width: 100%;
-  background: #000000;
-  padding: 50px 0;
+  background: #ffffff;
+  padding: 40px 0 30px;
   text-align: center;
+  border-bottom: 1px solid #e8e8e8;
 }
 
 .es-tag-header__inner {
-  max-width: 1280px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -21,302 +23,263 @@
 .es-tag-header__title {
   font-size: 42px;
   font-weight: 900;
-  color: #ffffff;
-  margin: 0;
+  color: #1a1a2e;
+  margin: 0 0 12px 0;
   text-transform: uppercase;
-  letter-spacing: 3px;
+  letter-spacing: -0.5px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.1;
 }
 
 /* Content Section */
 .es-tag-content {
   width: 100%;
-  background: #f8f9fa;
-  padding: 28px 0 16px;
+  background: transparent;
+  padding: 24px 0 60px;
 }
 
 .es-tag-content__inner {
-  max-width: 780px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 20px;
 }
 
 .es-tag-content__subtitle {
-  font-size: 24px;
-  font-weight: 900;
-  color: #2c3e50;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff4d4f;
   margin: 0 0 6px 0;
-  letter-spacing: 0.5px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: none;
 }
 
 .es-tag-content__desc {
-  font-size: 14px;
-  font-style: italic;
-  color: #7f8c8d;
-  margin: 0 0 2px 0;
-  font-weight: 400;
+  display: none;
 }
 
 .es-tag-content__date {
-  font-size: 13px;
-  color: #e74c3c;
-  font-style: italic;
-  margin: 0 0 35px 0;
-  font-weight: 500;
+  display: none;
 }
 
-/* Posts Grid */
+/* Posts Grid - Uniform Card Stack */
 .es-tag-posts {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin-top: 35px;
+  gap: 20px;
+  margin-top: 0;
 }
 
-/* Individual Post Card */
+/* All Post Cards - Same Style */
 .es-tag-post {
   background: #ffffff;
   position: relative;
-  padding: 28px;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s ease;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: none;
 }
 
 .es-tag-post:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.es-tag-post:first-child {
-  padding: 32px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .es-tag-post__link {
   display: flex;
+  flex-direction: row;
   text-decoration: none;
   color: inherit;
-  gap: 0;
-  position: relative;
-}
-
-/* Red accent line for first post - HIDDEN */
-.es-tag-post__accent {
-  display: none;
-}
-
-/* Featured (First) Post - Vertical Layout */
-.es-tag-post--featured .es-tag-post__link {
-  flex-direction: column;
-  gap: 18px;
-}
-
-.es-tag-post--featured .es-tag-post__image {
-  width: 100%;
-  padding-bottom: 50%; 
-  order: 1;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.es-tag-post--featured .es-tag-post__content {
-  order: 2;
   padding: 0;
+  gap: 0;
+  align-items: stretch;
+  min-height: 180px;
 }
 
-.es-tag-post--featured .es-tag-post__title {
-  font-size: 26px;
-  line-height: 1.3;
-  margin-bottom: 10px;
-  font-weight: 700;
-}
-
-.es-tag-post--featured .es-tag-post__author {
-  font-size: 14px;
-}
-
-/* Regular Posts - Horizontal Layout (Image on RIGHT) */
-.es-tag-post:not(.es-tag-post--featured) .es-tag-post__link {
-  flex-direction: row;
-  gap: 20px;
-  align-items: flex-start;
-}
-
-.es-tag-post:not(.es-tag-post--featured) .es-tag-post__content {
+/* Content Area - Left Side */
+.es-tag-post__content {
   flex: 1;
   order: 1;
-  padding: 0;
-  padding-top: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.es-tag-post:not(.es-tag-post--featured) .es-tag-post__image {
-  flex-shrink: 0;
-  width: 220px;
-  height: 145px;
-  order: 2;
-  padding-bottom: 0;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-/* Badge Top (NEWS) */
-.es-tag-post__badge-top {
-  display: inline-block;
-  background: #eb5757;
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 5px 14px;
-  border-radius: 12px;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-}
-
-/* Image Container */
+/* Image - Right Side */
 .es-tag-post__image {
-  position: relative;
-  background: #f0f0f0;
+  flex-shrink: 0;
+  width: 280px;
+  height: auto;
+  min-height: 180px;
+  order: 2;
+  border-radius: 0 12px 12px 0;
   overflow: hidden;
+  position: relative;
+  background: #e8eef2;
 }
 
 .es-tag-post__image img {
   object-fit: cover;
+  transition: transform 0.5s ease;
+  width: 100%;
+  height: 100%;
 }
 
-/* Content Area */
-.es-tag-post__content {
-  display: flex;
-  flex-direction: column;
+.es-tag-post:hover .es-tag-post__image img {
+  transform: scale(1.06);
 }
 
+/* Badge (NEWS) - Red Pill */
+.es-tag-post__badge-top {
+  display: inline-block;
+  background: #ff4757;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+/* Title */
 .es-tag-post__title {
   font-size: 20px;
   font-weight: 700;
   color: #2c3e50;
-  line-height: 1.35;
-  margin: 0 0 10px 0;
+  line-height: 1.4;
+  margin: 0 0 auto 0;
   transition: color 0.2s ease;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .es-tag-post__link:hover .es-tag-post__title {
-  color: #e74c3c;
+  color: #ff4757;
 }
 
+/* Author */
 .es-tag-post__author {
-  font-size: 13px;
+  font-size: 14px;
   color: #95a5a6;
-  margin: 0;
-  font-weight: 400;
+  margin: 12px 0 0 0;
+  font-weight: 500;
+}
+
+.es-tag-post__author::before {
+  content: 'By ';
+  color: #95a5a6;
 }
 
 .es-tag-empty {
   text-align: center;
   font-size: 18px;
-  color: #7f8c8d;
+  color: #95a5a6;
   padding: 60px 20px;
-  font-style: italic;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* Mobile Specific */
+/* Mobile Responsive - Horizontal Cards Like Screenshot */
 @media (max-width: 767px) {
   .es-tag-header {
-    padding: 35px 0;
+    padding: 30px 0 24px;
   }
   
   .es-tag-header__title {
     font-size: 28px;
-    letter-spacing: 2px;
   }
   
   .es-tag-content {
-    padding: 16px 0 12px;
+    padding: 16px 0 40px;
   }
   
   .es-tag-content__inner {
     padding: 0 16px;
   }
   
-  .es-tag-content__subtitle {
-    font-size: 20px;
+  .es-tag-posts {
+    gap: 16px;
   }
   
-  .es-tag-post {
-    padding: 20px;
+  /* Keep horizontal layout on mobile - don't stack */
+  .es-tag-post__link {
+    flex-direction: row;
+    min-height: 140px;
   }
   
-  .es-tag-post:first-child {
-    padding: 20px;
+  .es-tag-post__content {
+    flex: 1;
+    order: 1;
+    padding: 16px;
   }
   
-  .es-tag-post__accent {
-    left: 0;
-    height: 40px;
-  }
-  
-  .es-tag-post:not(.es-tag-post--featured) .es-tag-post__link {
-    gap: 14px;
-  }
-  
-  .es-tag-post:not(.es-tag-post--featured) .es-tag-post__image {
+  /* Smaller image on mobile - RIGHT side */
+  .es-tag-post__image {
     width: 140px;
-    height: 100px;
-  }
-  
-  .es-tag-post--featured .es-tag-post__title {
-    font-size: 20px;
+    height: auto;
+    min-height: 140px;
+    order: 2;
+    border-radius: 0 12px 12px 0;
   }
   
   .es-tag-post__title {
     font-size: 16px;
+    line-height: 1.4;
     margin-bottom: 8px;
   }
   
   .es-tag-post__badge-top {
-    font-size: 9px;
+    font-size: 10px;
     padding: 4px 12px;
     margin-bottom: 8px;
-    border-radius: 10px;
   }
   
   .es-tag-post__author {
     font-size: 12px;
+    margin-top: 8px;
   }
 }
 
 /* Tablet */
 @media (min-width: 768px) and (max-width: 1023px) {
   .es-tag-header {
-    padding: 45px 0;
+    padding: 35px 0 28px;
   }
   
   .es-tag-header__title {
-    font-size: 38px;
+    font-size: 36px;
   }
   
-  .es-tag-content__subtitle {
-    font-size: 22px;
+  .es-tag-content {
+    padding: 20px 0 50px;
   }
   
-  .es-tag-post--featured .es-tag-post__title {
-    font-size: 24px;
+  .es-tag-posts {
+    gap: 18px;
+  }
+  
+  .es-tag-post__link {
+    min-height: 160px;
+  }
+  
+  .es-tag-post__image {
+    width: 240px;
+    min-height: 160px;
   }
   
   .es-tag-post__title {
-    font-size: 18px;
-  }
-  
-  .es-tag-post:not(.es-tag-post--featured) .es-tag-post__image {
-    width: 200px;
-    height: 135px;
+    font-size: 19px;
   }
 }
 
 /* Desktop */
 @media (min-width: 1024px) {
   .es-tag-header {
-    padding: 50px 0;
+    padding: 40px 0 30px;
   }
   
   .es-tag-header__title {
@@ -324,23 +287,23 @@
   }
   
   .es-tag-content {
-    padding: 32px 0 16px;
+    padding: 24px 0 60px;
   }
   
-  .es-tag-content__subtitle {
-    font-size: 24px;
+  .es-tag-posts {
+    gap: 20px;
   }
   
-  .es-tag-post--featured .es-tag-post__title {
-    font-size: 26px;
+  .es-tag-post__link {
+    min-height: 180px;
+  }
+  
+  .es-tag-post__image {
+    width: 280px;
+    min-height: 180px;
   }
   
   .es-tag-post__title {
     font-size: 20px;
-  }
-  
-  .es-tag-post:not(.es-tag-post--featured) .es-tag-post__image {
-    width: 220px;
-    height: 145px;
   }
 }

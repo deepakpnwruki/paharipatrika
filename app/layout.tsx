@@ -142,7 +142,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#b80000" />
-        <link rel="preconnect" href={process.env.WP_GRAPHQL_ENDPOINT?.replace('/graphql', '') || ''} />
+  <link rel="preconnect" href={process.env.WP_GRAPHQL_ENDPOINT?.replace('/graphql', '') || ''} />
+  {/* Speed up DNS/TLS to CMS and media hosts */}
+  <link rel="dns-prefetch" href="https://cms.paharipatrika.in" />
+  <link rel="preconnect" href="https://cms.paharipatrika.in" crossOrigin="" />
+  <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+  <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="" />
         <meta name="format-detection" content="telephone=no" />
         
         {/* Google AdSense */}

@@ -19,13 +19,14 @@ const nextConfig = {
       "img-src * data: blob:",
       "media-src * data: blob:",
       "style-src 'self' 'unsafe-inline'",
-      // Allow AdSense scripts
-      `script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://adservice.google.com https://www.googletagmanager.com${isProd ? '' : " 'unsafe-eval'"}`,
-      "connect-src * https://pagead2.googlesyndication.com",
+      // Allow AdSense and Twitter scripts
+      `script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://adservice.google.com https://www.googletagmanager.com https://platform.twitter.com${isProd ? '' : " 'unsafe-eval'"}`,
+      // Allow connections to CMS, AdSense, and Twitter endpoints
+      "connect-src * https://pagead2.googlesyndication.com https://platform.twitter.com https://syndication.twitter.com",
       "font-src 'self' data:",
       "object-src 'none'",
-      // Allow AdSense iframes
-      "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
+      // Allow AdSense, Twitter widgets, and YouTube iframes
+      "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://platform.twitter.com https://www.youtube.com https://www.youtube-nocookie.com",
       "frame-ancestors 'self'"
     ].join('; ');
 
@@ -69,7 +70,9 @@ const nextConfig = {
     SITE_URL: process.env.SITE_URL || 'https://paharipatrika.in',
     ORGANIZATION_NAME: process.env.ORGANIZATION_NAME || 'Pahari Patrika Media',
     NEXT_PUBLIC_SITE_URL: process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://paharipatrika.in',
-    WP_FETCH_TIMEOUT_MS: '5000',
+    // Keep both names aligned; graphql.ts reads WP_GRAPHQL_TIMEOUT_MS first
+    WP_FETCH_TIMEOUT_MS: process.env.WP_FETCH_TIMEOUT_MS || '7000',
+    WP_GRAPHQL_TIMEOUT_MS: process.env.WP_GRAPHQL_TIMEOUT_MS || process.env.WP_FETCH_TIMEOUT_MS || '7000',
     WP_FETCH_RETRIES: '2',
     REVALIDATE_SECONDS: '300',
   },

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { getCategoryUrl } from '@/lib/url-helpers';
 
 interface Category {
   name: string;
@@ -115,7 +116,7 @@ export default function Header({ logoUrl: _logoUrl, siteTitle, categories }: Hea
           {Array.isArray(categories) && categories.length > 0 && categories.slice(0, 8).map((c: Category) => (
             <Link 
               key={c.slug} 
-              href={`/category/${encodeURIComponent(c.slug)}`}
+              href={getCategoryUrl(c)}
               className="en-nav-link"
               aria-label={`${c.name} कैटेगरी देखें`}
             >

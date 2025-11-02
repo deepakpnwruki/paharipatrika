@@ -18,6 +18,7 @@ export const AUTHOR_BY_SLUG_QUERY = `
           endCursor
         }
         nodes {
+          id
           title
           excerpt
           slug
@@ -35,6 +36,24 @@ export const AUTHOR_BY_SLUG_QUERY = `
               slug
             }
           }
+        }
+      }
+    }
+  }
+`;
+
+// Query to get total post count for an author (fetch in batches due to WP limits)
+export const AUTHOR_POST_COUNT_QUERY = `
+  query AuthorPostCount($slug: ID!, $first: Int = 100, $after: String) {
+    user(id: $slug, idType: SLUG) {
+      id
+      posts(first: $first, after: $after, where: { status: PUBLISH }) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          id
         }
       }
     }
@@ -68,6 +87,7 @@ export const NODE_BY_URI_QUERY = `
           node {
             sourceUrl
             altText
+            mediaDetails { width height }
             caption
             description
           }
@@ -112,6 +132,7 @@ export const NODE_BY_URI_QUERY = `
           node {
             sourceUrl
             altText
+            mediaDetails { width height }
           }
         }
       }
@@ -201,6 +222,7 @@ export const POST_BY_URI_QUERY = `
         node {
           sourceUrl
           altText
+          mediaDetails { width height }
           caption
           description
         }
@@ -251,6 +273,7 @@ export const PAGE_BY_URI_QUERY = `
         node {
           sourceUrl
           altText
+          mediaDetails { width height }
         }
       }
     }
@@ -344,15 +367,23 @@ export const LATEST_POSTS_QUERY = `
 `;
 
 export const TAG_BY_SLUG_QUERY = `
-  query TagBySlug($slug: ID!) {
+  query TagBySlug($slug: ID!, $first: Int = 20, $after: String) {
     tag(id: $slug, idType: SLUG) {
       id
       name
       description
       slug
       uri
-      posts(first: 100) {
+      count
+      posts(first: $first, after: $after) {
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
         nodes {
+          id
           title
           excerpt
           slug

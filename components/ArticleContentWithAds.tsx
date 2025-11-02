@@ -9,6 +9,7 @@ interface ArticleContentWithAdsProps {
 
 export default function ArticleContentWithAds({ content, inArticleAdSlot }: ArticleContentWithAdsProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const DEBUG = process.env.NEXT_PUBLIC_ADS_DEBUG === 'true';
 
   useEffect(() => {
     if (!contentRef.current || !inArticleAdSlot) return;
@@ -26,11 +27,10 @@ export default function ArticleContentWithAds({ content, inArticleAdSlot }: Arti
       const adSlots = contentRef.current?.querySelectorAll('.article-ad-slot');
       
       if (!adSlots || adSlots.length === 0) {
-        console.warn('No ad slots found in content');
+        DEBUG && console.warn('[Ads] No ad slots found in content');
         return;
       }
-
-      console.log(`Found ${adSlots.length} ad slots`);
+      DEBUG && console.log(`[Ads] Found ${adSlots.length} ad slots`);
       
       adSlots.forEach((slot, index) => {
         // Create ad container
@@ -65,11 +65,11 @@ export default function ArticleContentWithAds({ content, inArticleAdSlot }: Arti
         
         // Push ad to AdSense
         try {
-          console.log(`Pushing ad ${index + 1} to AdSense`);
+          DEBUG && console.log(`[Ads] Pushing ad ${index + 1} to AdSense`);
           // @ts-expect-error - adsbygoogle is injected by Google AdSense script
           (window.adsbygoogle = window.adsbygoogle || []).push({});
         } catch (err) {
-          console.error('AdSense error:', err);
+          console.error('[Ads] AdSense error:', err);
         }
       });
     }, 100); // Small delay to ensure DOM is ready

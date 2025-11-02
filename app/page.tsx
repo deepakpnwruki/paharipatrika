@@ -4,6 +4,7 @@ import { wpFetch } from '../lib/graphql';
 import AuthorLink from '../components/AuthorLink';
 import type { Metadata } from 'next';
 import './homepage.css';
+import { getPostUrl } from '../lib/url-helpers';
 
 // SEO: Generate metadata for homepage
 export async function generateMetadata(): Promise<Metadata> {
@@ -199,7 +200,7 @@ export default async function Home() {
           <div className="featured-column">
             {/* Large Featured Card - Side by Side Layout */}
             {featured && (
-              <Link href={featured.uri || `/${featured.slug}`} className="featured-card large">
+              <Link href={getPostUrl(featured)} className="featured-card large" prefetch={false}>
                 <div className="featured-image">
                   {featured.featuredImage?.node?.sourceUrl && (
                     <Image
@@ -241,8 +242,9 @@ export default async function Home() {
               {secondaryPosts.map((post, index) => (
                 <Link 
                   key={post.slug} 
-                  href={post.uri || `/${post.slug}`} 
+                  href={getPostUrl(post)} 
                   className="featured-card small"
+                  prefetch={false}
                 >
                   <div className="featured-image">
                     {post.featuredImage?.node?.sourceUrl && (
@@ -284,8 +286,9 @@ export default async function Home() {
               {listPosts.map((post) => (
                 <Link 
                   key={post.slug} 
-                  href={post.uri || `/${post.slug}`} 
+                  href={getPostUrl(post)} 
                   className="article-item"
+                  prefetch={false}
                 >
                   <div className="article-thumbnail">
                     {post.featuredImage?.node?.sourceUrl && (
@@ -326,8 +329,9 @@ export default async function Home() {
                 {latestPosts.map((post, index) => (
                   <Link 
                     key={post.slug} 
-                    href={post.uri || `/${post.slug}`}
+                    href={getPostUrl(post)}
                     className="sidebar-post"
+                    prefetch={false}
                   >
                     <div className="sidebar-post-number">{index + 1}</div>
                     <div className="sidebar-post-content">
@@ -346,8 +350,9 @@ export default async function Home() {
                 {trendingPosts.map((post, index) => (
                   <Link 
                     key={post.slug} 
-                    href={post.uri || `/${post.slug}`}
+                    href={getPostUrl(post)}
                     className="sidebar-post"
+                    prefetch={false}
                   >
                     <div className="sidebar-post-number trending">{index + 1}</div>
                     <div className="sidebar-post-content">

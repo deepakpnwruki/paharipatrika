@@ -3,10 +3,11 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { wpFetch } from '../../../lib/graphql';
 import { CATEGORY_BY_SLUG_QUERY } from '../../../lib/queries';
+import { normalizeUrl, getPostUrl } from '../../../lib/url-helpers';
 import './category-page.css';
 
 export const revalidate = 300; // ISR: 5 minutes for category pages (semi-static)
-export const dynamic = 'force-static'; // Force static generation
+export const dynamic = 'auto'; // Allow dynamic rendering for query params
 export const dynamicParams = true; // Allow new categories
 
 // Pre-generate top categories at build time
@@ -34,7 +35,7 @@ export async function generateStaticParams() {
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ after?: string }>; // use 'after' for cursor-based pagination
+  searchParams: Promise<{ page?: string }>; // page number for pagination
 };
 
 function timeAgo(dateString?: string) {
@@ -54,8 +55,11 @@ function timeAgo(dateString?: string) {
   return `${months} mo ago`;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const sp = await searchParams;
+  const pageParam = (sp as Record<string, any>)["page"];
+  const page = pageParam ? Number(pageParam) : 1;
   
   try {
     const data = await wpFetch<{ category: any }>(
@@ -68,21 +72,38 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       return { title: 'Category not found' };
     }
 
-    const category = data.category;
+  const category = data.category;
     const siteName = process.env.SITE_NAME || 'Pahari Patrika';
     const siteUrl = (process.env.SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const categoryUrl = `${siteUrl}${normalizeUrl(category.uri)}`;
+  const pageUrl = page > 1 ? `${categoryUrl}?page=${page}` : categoryUrl;
     const description = category.description || `${category.name} की ताज़ा खबरें, समाचार और अपडेट्स - ${siteName}`;
+    const titleWithPage = page > 1 ? `${category.name} समाचार - पेज ${page} | ${siteName}` : `${category.name} समाचार | ${siteName}`;
 
     return {
-      title: `${category.name} समाचार | ${siteName}`,
+      title: titleWithPage,
       description,
       alternates: {
-        canonical: `${siteUrl}${category.uri}`,
+        canonical: pageUrl,
+        languages: {
+          'hi-IN': pageUrl,
+        }
+      },
+      robots: {
+        // Only index page 1, noindex pagination pages
+        index: page === 1,
+        follow: true,
+        googleBot: {
+          index: page === 1,
+          follow: true,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
       },
       openGraph: {
         title: `${category.name} - Latest News & Updates`,
         description,
-        url: `${siteUrl}${category.uri}`,
+        url: pageUrl,
         type: 'website',
         siteName,
         locale: 'hi_IN',
@@ -105,21 +126,23 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   // Safely extract 'page' from searchParams (string index signature)
   const pageParam = (sp as Record<string, any>)["page"];
   const page = pageParam ? Number(pageParam) : 1;
-  const postsPerPage = 10;
+  const postsPerPage = 20;
 
-  // To get the correct 'after' cursor for the requested page, fetch all previous endCursors
+  // For cursor-based pagination, we need to get the cursor for the requested page
+  // We'll fetch page by page until we reach the desired page
   let afterCursor: string | null = null;
+  
   if (page > 1) {
-    let lastCursor: string | null = null;
+    // Fetch previous pages to get to the correct cursor
     for (let i = 1; i < page; i++) {
       const prevData: { category: any } = await wpFetch(
         CATEGORY_BY_SLUG_QUERY,
-        { slug, first: postsPerPage, after: lastCursor },
+        { slug, first: postsPerPage, after: afterCursor },
         revalidate
       );
-      lastCursor = prevData?.category?.posts?.pageInfo?.endCursor || null;
+      afterCursor = prevData?.category?.posts?.pageInfo?.endCursor || null;
+      if (!afterCursor) break; // No more pages
     }
-    afterCursor = lastCursor;
   }
 
   const data = await wpFetch<{ category: any }>(
@@ -146,7 +169,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     "@type": "CollectionPage",
     "name": category.name,
     "description": category.description || `${category.name} समाचार`,
-    "url": `${siteUrl}${category.uri}`,
+  "url": `${siteUrl}${normalizeUrl(category.uri)}`,
     "breadcrumb": {
       "@type": "BreadcrumbList",
       "itemListElement": [
@@ -160,17 +183,28 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           "@type": "ListItem",
           "position": 2,
           "name": category.name,
-          "item": `${siteUrl}${category.uri}`
+          "item": `${siteUrl}${normalizeUrl(category.uri)}`
         }
       ]
     },
     "mainEntity": {
       "@type": "ItemList",
-      "itemListElement": posts.map((post: any, index: number) => ({
-        "@type": "ListItem",
-        "position": index + 1,
-        "url": `${siteUrl}${post.uri || '/' + post.slug}`
-      }))
+      "itemListElement": posts.map((post: any, index: number) => {
+        const img = post?.featuredImage?.node?.sourceUrl as string | undefined;
+        const absoluteImg = img
+          ? (/^https?:\/\//i.test(img) ? img : `${siteUrl}${img.startsWith('/') ? '' : '/'}${img}`)
+          : undefined;
+        return {
+          "@type": "ListItem",
+          "position": index + 1,
+          "item": {
+            "@type": "Article",
+            "url": `${siteUrl}${getPostUrl(post)}`,
+            "name": post.title,
+            ...(absoluteImg ? { "image": absoluteImg } : {})
+          }
+        };
+      })
     }
   });
 
@@ -181,9 +215,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   return (
     <>
-      <link rel="canonical" href={canonicalUrl} />
-      {prevUrl && <link rel="prev" href={prevUrl} />}
-      {nextUrl && <link rel="next" href={nextUrl} />}
+  {/** Canonical/prev/next are managed via generateMetadata; avoid manual <link> tags to prevent stale head elements across navigations. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: structuredData }}
@@ -202,6 +234,12 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           <div className="cat-header">
             <h1 className="cat-header__title">{category.name.toUpperCase()}</h1>
             <div className="cat-header__line"></div>
+            {totalPosts > 0 && (
+              <p className="cat-header__count" style={{ fontSize: '0.9rem', color: '#666', marginTop: '8px' }}>
+                {totalPosts} {totalPosts === 1 ? 'Article' : 'Articles'}
+                {page > 1 && ` - Page ${page} of ${totalPages}`}
+              </p>
+            )}
           </div>
 
           {posts.length === 0 ? (
@@ -214,7 +252,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                 const isFirst = index === 0;
                 return (
                   <article key={post.slug} className={`cat-post ${isFirst ? 'cat-post--featured' : ''}`}>
-                    <Link href={post.uri || `/${post.slug}`} className="cat-post__link">
+                    <Link href={getPostUrl(post)} className="cat-post__link">
                       {post.featuredImage?.node?.sourceUrl && (
                         <div className="cat-post__image">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -247,97 +285,62 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           {/* Pagination */}
           {totalPages > 1 && (
             <nav className="cat-pagination" aria-label="Pagination">
+              {/* Previous button */}
+              {page > 1 && (
+                <Link
+                  href={page === 2 ? normalizeUrl(category.uri) : `${normalizeUrl(category.uri)}?page=${page - 1}`}
+                  className="cat-pagination__btn cat-pagination__prev"
+                  aria-label="Previous page"
+                >
+                  ‹
+                </Link>
+              )}
+
+              {/* Page numbers */}
               {(() => {
-                // Get current page from searchParams (server-side)
-                let currentPage = 1;
-                if (typeof window === 'undefined') {
-                  if (page && !isNaN(Number(page))) {
-                    currentPage = Number(page);
-                  }
-                } else {
-                  const urlParams = new URLSearchParams(window.location.search);
-                  const pageParam = urlParams.get('page');
-                  if (pageParam && !isNaN(Number(pageParam))) {
-                    currentPage = Number(pageParam);
-                  }
-                }
                 const maxPages = 5;
-                let start = Math.max(1, currentPage - Math.floor(maxPages / 2));
+                let start = Math.max(1, page - Math.floor(maxPages / 2));
                 let end = start + maxPages - 1;
                 if (end > totalPages) {
                   end = totalPages;
                   start = Math.max(1, end - maxPages + 1);
                 }
-                // Prev button
-                if (currentPage > 1) {
-                  const prevHref = currentPage - 1 === 1 ? `${category.uri}` : `${category.uri}?page=${currentPage - 1}`;
+                
+                return Array.from({ length: end - start + 1 }, (_, i) => {
+                  const pageNum = start + i;
+                  const isCurrent = pageNum === page;
+                  const href = pageNum === 1 ? normalizeUrl(category.uri) : `${normalizeUrl(category.uri)}?page=${pageNum}`;
                   return (
-                    <>
-                      <Link
-                        href={prevHref}
-                        className="cat-pagination__btn cat-pagination__prev"
-                        aria-label="Previous page"
-                      >
-                        ‹
-                      </Link>
-                      {Array.from({ length: end - start + 1 }, (_, i) => {
-                        const pageNum = start + i;
-                        const isCurrent = pageNum === currentPage;
-                        const href = pageNum === 1 ? `${category.uri}` : `${category.uri}?page=${pageNum}`;
-                        return (
-                          <Link
-                            key={pageNum}
-                            href={href}
-                            className={`cat-pagination__page${isCurrent ? ' cat-pagination__page--current' : ''}`}
-                            style={{ color: '#fff', background: isCurrent ? '#ff4d4f' : 'transparent', borderRadius: '4px', padding: '0.2em 0.7em', margin: '0 2px', fontWeight: isCurrent ? 700 : 400 }}
-                          >
-                            {pageNum}
-                          </Link>
-                        );
-                      })}
-                      {currentPage < totalPages && (
-                        <Link
-                          href={`${category.uri}?page=${currentPage + 1}`}
-                          className="cat-pagination__btn cat-pagination__next"
-                          aria-label="Next page"
-                        >
-                          ›
-                        </Link>
-                      )}
-                    </>
+                    <Link
+                      key={pageNum}
+                      href={href}
+                      className={`cat-pagination__page${isCurrent ? ' cat-pagination__page--current' : ''}`}
+                      style={{ 
+                        color: '#fff', 
+                        background: isCurrent ? '#ff4d4f' : 'transparent', 
+                        borderRadius: '4px', 
+                        padding: '0.2em 0.7em', 
+                        margin: '0 2px', 
+                        fontWeight: isCurrent ? 700 : 400 
+                      }}
+                      aria-current={isCurrent ? 'page' : undefined}
+                    >
+                      {pageNum}
+                    </Link>
                   );
-                } else {
-                  // No prev button on first page
-                  return (
-                    <>
-                      {Array.from({ length: end - start + 1 }, (_, i) => {
-                        const pageNum = start + i;
-                        const isCurrent = pageNum === currentPage;
-                        const href = pageNum === 1 ? `${category.uri}` : `${category.uri}?page=${pageNum}`;
-                        return (
-                          <Link
-                            key={pageNum}
-                            href={href}
-                            className={`cat-pagination__page${isCurrent ? ' cat-pagination__page--current' : ''}`}
-                            style={{ color: '#fff', background: isCurrent ? '#ff4d4f' : 'transparent', borderRadius: '4px', padding: '0.2em 0.7em', margin: '0 2px', fontWeight: isCurrent ? 700 : 400 }}
-                          >
-                            {pageNum}
-                          </Link>
-                        );
-                      })}
-                      {currentPage < totalPages && (
-                        <Link
-                          href={`${category.uri}?page=${currentPage + 1}`}
-                          className="cat-pagination__btn cat-pagination__next"
-                          aria-label="Next page"
-                        >
-                          ›
-                        </Link>
-                      )}
-                    </>
-                  );
-                }
+                });
               })()}
+
+              {/* Next button */}
+              {page < totalPages && (
+                <Link
+                  href={`${normalizeUrl(category.uri)}?page=${page + 1}`}
+                  className="cat-pagination__btn cat-pagination__next"
+                  aria-label="Next page"
+                >
+                  ›
+                </Link>
+              )}
             </nav>
           )}
         </div>

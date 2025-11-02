@@ -17,6 +17,7 @@ import EmbedProcessor from '../../components/EmbedProcessor';
 import Link from 'next/link';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import './article.css';
+import { getPostUrl, getCategoryUrl, getTagUrl } from '../../lib/url-helpers';
 
 type ParamPromise = Promise<{ slug?: string[] }>;
 
@@ -99,6 +100,17 @@ function candidates(segments?: string[]) {
     addForms(dec);
     addForms(dec.toLowerCase());
   } catch {}
+  // New permalink support: try .html variant for likely post paths
+  // Only apply when it's a single-segment path (post at root) and not taxonomy routes
+  const first = segments[0];
+  const isTaxonomy = first === 'category' || first === 'tag' || first === 'author' || first === 'pages';
+  const last = segments[segments.length - 1] || '';
+  const looksLikeFile = /\.[a-z0-9]+$/i.test(last);
+  if (!isTaxonomy && segments.length === 1 && !looksLikeFile) {
+    const htmlPath = `/${last}.html`;
+    addForms(htmlPath);
+    addForms(htmlPath.toLowerCase());
+  }
   return Array.from(set);
 }
 
@@ -267,7 +279,7 @@ async function resolveNode(segments?: string[]) {
 
           <section className="es-container es-grid es-grid--cards" aria-label={`Posts in ${node.name}`}>
             {posts.map((p: any) => (
-              <Link href={`/${p.slug}`} key={p.slug} className="es-card">
+              <Link href={getPostUrl(p)} key={p.slug} className="es-card" prefetch={false}>
                 {p.featuredImage?.node?.sourceUrl && (
                   <div style={{ position: 'relative', width: '100%', height: '200px' }}>
                     <Image 
@@ -303,9 +315,11 @@ async function resolveNode(segments?: string[]) {
     const primaryCategory = node?.categories?.nodes?.[0];
     const breadcrumbs = [
       { name: 'Home', href: '/' },
-      ...(primaryCategory?.slug ? [{ name: primaryCategory.name, href: `/category/${primaryCategory.slug}` }] : [])
+      ...(primaryCategory?.slug ? [{ name: primaryCategory.name, href: getCategoryUrl(primaryCategory) }] : [])
     ];
 
+    const imgWidth = (img as any)?.mediaDetails?.width || 1200;
+    const imgHeight = (img as any)?.mediaDetails?.height || 630;
     const schema = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': node.__typename === 'Post' ? 'NewsArticle' : 'WebPage',
@@ -314,8 +328,8 @@ async function resolveNode(segments?: string[]) {
       image: img?.sourceUrl ? { 
         '@type': 'ImageObject', 
         url: absoluteUrl(img.sourceUrl, site), 
-        width: 1200, 
-        height: 630,
+        width: imgWidth, 
+        height: imgHeight,
         caption: plainText(img?.caption || img?.description || '', 240) || (img?.altText || '')
       } : undefined,
       thumbnailUrl: img?.sourceUrl ? absoluteUrl(img.sourceUrl, site) : undefined,
@@ -345,6 +359,15 @@ async function resolveNode(segments?: string[]) {
       keywords: node?.tags?.nodes?.map((t: any) => t.name).join(', '),
       wordCount: plainText(node?.content).split(/\s+/).filter(Boolean).length
     });
+
+    // Breadcrumb JSON-LD for Article/Page
+    const breadcrumbItems = [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: site },
+      ...(primaryCategory?.slug ? [{ '@type': 'ListItem', position: 2, name: primaryCategory.name, item: `${site}${getCategoryUrl(primaryCategory)}` }] : []),
+    ];
+    const articlePosition = breadcrumbItems.length + 1;
+    breadcrumbItems.push({ '@type': 'ListItem', position: articlePosition, name: node.title, item: canonical });
+    const breadcrumbSchema = JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: breadcrumbItems });
 
     function wrapTables(content: string): string {
       return content
@@ -427,7 +450,8 @@ async function resolveNode(segments?: string[]) {
 
     return (
       <>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: schema }} />
+  <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: schema }} />
+  <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbSchema }} />
         <main className="es-page">
           {/* ---------- HERO ---------- */}
           <section className="es-hero">
@@ -591,7 +615,7 @@ async function resolveNode(segments?: string[]) {
                   <h3 className="es-related-topics__title">Posts On Related Topics <span className="es-slash">/</span></h3>
                   <div className="es-topic-tags">
                     {node.tags.nodes.map((t: any) => (
-                      <Link key={t.slug} href={`/tag/${t.slug}`} className="es-topic-tag">
+                      <Link key={t.slug} href={getTagUrl(t)} className="es-topic-tag">
                         {t.name}
                       </Link>
                     ))}
@@ -603,9 +627,9 @@ async function resolveNode(segments?: string[]) {
               {relatedItems.length > 0 && (
                 <div className="es-related-articles">
                   {relatedItems.slice(0, 3).map((post: any) => {
-                    const href = post.uri || `/${post.slug}`;
+                    const href = getPostUrl(post);
                     return (
-                      <Link href={href} key={post.slug} className="es-related-article">
+                      <Link href={href} key={post.slug} className="es-related-article" prefetch={false}>
                         {post?.featuredImage?.node?.sourceUrl && (
                           <div className="es-related-article__image">
                             <Image
@@ -656,9 +680,9 @@ async function resolveNode(segments?: string[]) {
                     {relatedItems.map((post: any) => {
                       const t = pickThumb(post?.featuredImage?.node);
                       const thumbUrl = t?.url ? absoluteUrl(t.url, site) : undefined;
-                      const href = post.uri || `/${post.slug}`;
+                      const href = getPostUrl(post);
                       return (
-                        <Link href={href} key={post.slug} className="es-related__card">
+                        <Link href={href} key={post.slug} className="es-related__card" prefetch={false}>
                           {thumbUrl && (
                             <span className="es-related__media">
                               <Image
@@ -685,10 +709,10 @@ async function resolveNode(segments?: string[]) {
                   <ul className="es-list es-list--latest">
                     {latestItems.map((post: any) => {
                       const thumb = pickThumb(post?.featuredImage?.node);
-                      const href = post.uri || `/${post.slug}`;
+                      const href = getPostUrl(post);
                       return (
                         <li key={`latest-${post.slug}`}>
-                          <Link href={href} className="es-list__item">
+                          <Link href={href} className="es-list__item" prefetch={false}>
                             {thumb?.url && (
                               <span className="es-list__thumb">
                                 <Image src={absoluteUrl(thumb.url, site)} alt={post.featuredImage?.node?.altText || post.title} fill sizes="96px" />
@@ -712,10 +736,10 @@ async function resolveNode(segments?: string[]) {
                   <ul className="es-list es-list--trend">
                     {trendingItems.map((post: any, index: number) => {
                       const thumb = pickThumb(post?.featuredImage?.node);
-                      const href = post.uri || `/${post.slug}`;
+                      const href = getPostUrl(post);
                       return (
                         <li key={`trending-${post.slug}`}>
-                          <Link href={href} className="es-list__item">
+                          <Link href={href} className="es-list__item" prefetch={false}>
                             {thumb?.url && (
                               <span className="es-list__thumb es-list__thumb--badge">
                                 <Image src={absoluteUrl(thumb.url, site)} alt={post.featuredImage?.node?.altText || post.title} fill sizes="96px" />
