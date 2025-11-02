@@ -320,6 +320,8 @@ async function resolveNode(segments?: string[]) {
 
     const imgWidth = (img as any)?.mediaDetails?.width || 1200;
     const imgHeight = (img as any)?.mediaDetails?.height || 630;
+    // Ensure ISO8601 with timezone for datePublished/dateModified/dateCreated
+    const toIsoWithTZ = (d?: string) => d ? new Date(d).toISOString() : undefined;
     const schema = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': node.__typename === 'Post' ? 'NewsArticle' : 'WebPage',
@@ -333,9 +335,9 @@ async function resolveNode(segments?: string[]) {
         caption: plainText(img?.caption || img?.description || '', 240) || (img?.altText || '')
       } : undefined,
       thumbnailUrl: img?.sourceUrl ? absoluteUrl(img.sourceUrl, site) : undefined,
-      datePublished: (node as any)?.date,
-      dateModified: (node as any)?.modified,
-      dateCreated: (node as any)?.date,
+      datePublished: toIsoWithTZ((node as any)?.date),
+      dateModified: toIsoWithTZ((node as any)?.modified),
+      dateCreated: toIsoWithTZ((node as any)?.date),
       articleBody: plainText(node?.content),
       speakable: {
         '@type': 'SpeakableSpecification',
