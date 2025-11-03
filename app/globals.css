@@ -611,12 +611,14 @@ header.sticky {
   background: #1a1a1a;
   color: #fff;
   margin-top: 0.5rem;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   box-sizing: border-box;
   position: relative;
   left: 0;
   right: 0;
   border-top: 3px solid #de1f26;
+  min-height: 220px; /* Reserve space to prevent CLS */
+  overflow-x: hidden;
 }
 
 .en-footer-inner {
@@ -624,41 +626,46 @@ header.sticky {
   margin: 0 auto;
   padding: 2rem 1.25rem 1.5rem;
   box-sizing: border-box;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 .en-footer-nav {
-  display:flex;
+  display: flex;
   justify-content: center;
   gap: 1.5rem;
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
+  min-height: 32px; /* Reserve space for nav links */
 }
 
 .en-footer-nav a {
   color: #fff;
   text-decoration: none;
   opacity: 0.9;
-  font-weight: 500;
-  transition: opacity 0.2s ease;
 }
-
-.en-footer-nav a:hover {
-  text-decoration: underline;
+.en-footer-sep { height: 1px; background: rgba(255,255,255,0.1); margin: 0.75rem 0 1rem; min-width: 100%; }
+.en-footer-ethics { color: #e5e7eb; text-align: center; margin: 0 0 0.75rem; font-size: 0.68em; min-height: 16px; }
+.en-footer-copy { color: #ddd; font-size: 0.68em; text-align: center; min-height: 14px; }
+/* Footer Social Menu Always Visible */
+.en-footer-social {
+  display: flex !important;
+  justify-content: center;
+  gap: 1.2rem;
+  margin-bottom: 1rem;
+}
+.en-footer-social-link {
+  color: #fff;
+  opacity: 0.85;
+  font-size: 1.1em;
+  transition: opacity 0.2s, color 0.2s;
+}
+.en-footer-social-link:hover {
+  color: #de1f26;
   opacity: 1;
 }
-
-.en-footer-bottom {
-  display:flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  padding-top: 1.5rem;
-  margin-top: 1rem;
-}
-.en-footer-sep { height: 1px; background: rgba(255,255,255,0.1); margin: 0.75rem 0 1rem; }
-.en-footer-ethics { color: #e5e7eb; text-align: center; margin: 0 0 0.75rem; font-size: 1rem; }
-.en-footer-copy { color: #ddd; font-size: 0.9rem; text-align: center; }
 .en-footer-links { display:flex; gap: 1rem; }
 .en-footer-links a { 
   color: #ddd; 

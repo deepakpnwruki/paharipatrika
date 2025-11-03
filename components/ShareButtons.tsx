@@ -1,5 +1,4 @@
-'use client';
-
+"use client";
 import { useState } from 'react';
 
 type Network = 'facebook' | 'twitter' | 'whatsapp' | 'copy';

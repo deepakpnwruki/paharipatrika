@@ -21,7 +21,7 @@ export default function ArticleContentWithAds({ content, inArticleAdSlot }: Arti
       if (!adSlots || typeof adSlots.length !== 'number' || adSlots.length === 0) {
         return;
       }
-      Array.from(adSlots).forEach((slot, index) => {
+  Array.from(adSlots).forEach((slot, _index) => {
         // Remove any previous content
         slot.innerHTML = '';
         // Create ad container
@@ -31,15 +31,15 @@ export default function ArticleContentWithAds({ content, inArticleAdSlot }: Arti
         const header = document.createElement('div');
         header.className = 'in-article-ad__header';
         header.innerHTML = `
-          <div class=\"in-article-ad__label\">ADVERTISEMENT</div>
-          <div class=\"in-article-ad__subtitle\">Article continues below this ad</div>
+          <div class="in-article-ad__label">ADVERTISEMENT</div>
+          <div class="in-article-ad__subtitle">Article continues below this ad</div>
         `;
 
         const adsenseContainer = document.createElement('div');
         adsenseContainer.className = 'adsense-container';
         adsenseContainer.style.cssText = 'display: inline-block; width: 300px; height: 250px; margin: 0 auto; background: #f7f7f7; padding: 8px;';
 
-        let adInjected = false;
+  let _adInjected = false;
         if (clientId) {
           const ins = document.createElement('ins');
           ins.className = 'adsbygoogle';
@@ -49,7 +49,7 @@ export default function ArticleContentWithAds({ content, inArticleAdSlot }: Arti
           ins.setAttribute('data-ad-format', 'auto');
           ins.setAttribute('data-full-width-responsive', 'false');
           adsenseContainer.appendChild(ins);
-          adInjected = true;
+          _adInjected = true;
         }
 
         adContainer.appendChild(header);

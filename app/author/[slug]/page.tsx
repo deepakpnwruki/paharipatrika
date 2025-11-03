@@ -1,8 +1,8 @@
 import { wpFetch } from '../../../lib/graphql';
 import { AUTHOR_BY_SLUG_QUERY, AUTHOR_POST_COUNT_QUERY } from '../../../lib/queries';
 import { generateAuthorProfileSchema } from '../../../lib/structured-data';
-import { getPostUrl } from '../../../lib/url-helpers';
-import Link from 'next/link';
+// import { getPostUrl } from '../../../lib/url-helpers';
+// import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
 import AuthorPostsList from '../../../components/AuthorPostsList';
@@ -118,7 +118,7 @@ export default async function AuthorPage({ params }: Props) {
   } else {
     // Fetch total count by paginating through all posts (WordPress limits to 100 per query)
     try {
-      let allPostIds: string[] = [];
+      const allPostIds: string[] = [];
       let afterCursor: string | null = null;
       let hasMore: boolean = true;
       let iterations = 0;

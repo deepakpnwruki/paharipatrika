@@ -161,8 +161,8 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const totalPosts = category.count || 0;
   const totalPages = Math.max(1, Math.ceil(totalPosts / postsPerPage));
   const siteUrl = (process.env.SITE_URL || '').replace(/\/$/, '');
-  const _firstPost = posts[0];
-  const _morePosts = posts.slice(1);
+  // const _firstPost = posts[0];
+  // const _morePosts = posts.slice(1);
 
   const structuredData = JSON.stringify({
     "@context": "https://schema.org",
@@ -209,9 +209,9 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   });
 
   // SEO pagination rel links
-  const canonicalUrl = page === 1 ? `${siteUrl}${category.uri}` : `${siteUrl}${category.uri}?page=${page}`;
-  const prevUrl = page > 1 ? (page === 2 ? `${siteUrl}${category.uri}` : `${siteUrl}${category.uri}?page=${page - 1}`) : null;
-  const nextUrl = page < totalPages ? `${siteUrl}${category.uri}?page=${page + 1}` : null;
+  // const canonicalUrl = page === 1 ? `${siteUrl}${category.uri}` : `${siteUrl}${category.uri}?page=${page}`;
+  // const prevUrl = page > 1 ? (page === 2 ? `${siteUrl}${category.uri}` : `${siteUrl}${category.uri}?page=${page - 1}`) : null;
+  // const nextUrl = page < totalPages ? `${siteUrl}${category.uri}?page=${page + 1}` : null;
 
   return (
     <>

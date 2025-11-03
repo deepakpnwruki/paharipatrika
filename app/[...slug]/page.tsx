@@ -10,7 +10,7 @@ import {
   CATEGORY_BY_SLUG_QUERY,
   RELATED_POSTS_QUERY,
 } from '../../lib/queries';
-import ShareButtons from '../../components/ShareButtons';
+import ShareButtonsClient from './ShareButtonsClient';
 import ImageCaption from '../../components/ImageCaption';
 import InArticleAd from '../../components/InArticleAd';
 import ArticleContentWithAds from '../../components/ArticleContentWithAds';
@@ -20,99 +20,39 @@ import PostCard from '../../components/PostCard';
 import Link from 'next/link';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import './article.css';
-import { getPostUrl, getCategoryUrl, getTagUrl } from '../../lib/url-helpers';
+import { getPostUrl, getCategoryUrl } from '../../lib/url-helpers';
+import { generateSEODescription } from '../../lib/seo-meta';
 
 type ParamPromise = Promise<{ slug?: string[] }>;
 
 export const revalidate = 60; // ISR: 1 minute for breaking news articles
-export const dynamic = 'force-static'; // Use ISR for better performance
+export const dynamicType = 'force-static'; // Use ISR for better performance
 export const dynamicParams = true; // Allow new articles dynamically
 
 // Pre-generate most recent and popular posts at build time for instant loading
 export async function generateStaticParams() {
-  try {
-    // Fetch recent posts to pre-generate
-    const data = await wpFetch<{ posts?: { nodes?: Array<{ slug: string; uri: string }> } }>(
-      `query RecentPosts {
-        posts(first: 100, where: { orderby: { field: DATE, order: DESC } }) {
-          nodes { slug uri }
-        }
+  // Pre-generate last 100 posts for ISR
+  const data = await wpFetch<{ posts?: { nodes?: Array<{ slug: string; uri: string }> } }>(
+    `query RecentPosts {
+      posts(first: 100, where: { orderby: { field: DATE, order: DESC } }) {
+        nodes { slug uri }
       }
-    `
-    );
-    // Defensive: ensure data and nodes are arrays
-    const nodes = (data && data.posts && Array.isArray(data.posts.nodes)) ? data.posts.nodes : [];
-    // Example: return nodes.map(p => ({ slug: [p.slug] }))
-    return nodes
-      .filter((p) => p && typeof p.slug === 'string' && p.slug.length > 0)
-      .map((p) => ({ slug: [p.slug] }));
-  } catch (e) {
-    // On error, return empty array to avoid undefined .length
-    return [];
-  }
-}
-
-/* ---------------- utilities ---------------- */
-function timeAgo(dateString?: string) {
-  if (!dateString) return '';
-  const then = new Date(dateString).getTime();
-  const now = Date.now();
-  const diff = Math.max(0, now - then);
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes || 1} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hrs ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} days ago`;
-  const weeks = Math.floor(days / 7);
-  if (weeks < 4) return `${weeks} wks ago`;
-  const months = Math.floor(days / 30);
-  return `${months} mo ago`;
-}
-function absoluteUrl(url?: string, site?: string) {
-    if (!url) return url as any;
-    if (/^https?:\/\//i.test(url)) return url;
-    const base = (site || process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
-    const path = url.startsWith('/') ? url : `/${url}`;
-    return `${base}${path}`;
-}
-
-function plainText(html?: string, max = 160) {
-  const text = (html || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-  return text.slice(0, max);
-}
-
-function candidates(segments?: string[]) {
-  if (!segments || !Array.isArray(segments) || segments.length === 0) return [];
-  const joined = '/' + segments.join('/');
-  const set = new Set<string>();
-  const addForms = (s: string) => {
-    set.add(s);
-    set.add(s.endsWith('/') ? s : s + '/');
-  };
-  addForms(joined);
-  addForms(joined.toLowerCase());
-  try {
-    const dec = decodeURIComponent(joined);
-    addForms(dec);
-    addForms(dec.toLowerCase());
-  } catch {}
-  // New permalink support: try .html variant for likely post paths
-  // Only apply when it's a single-segment path (post at root) and not taxonomy routes
-  const first = segments[0];
-  const isTaxonomy = first === 'category' || first === 'tag' || first === 'author' || first === 'pages';
-  const last = Array.isArray(segments) && segments.length > 0 ? segments[segments.length - 1] : '';
-  const looksLikeFile = /\.[a-z0-9]+$/i.test(last);
-  if (!isTaxonomy && Array.isArray(segments) && segments.length === 1 && !looksLikeFile) {
-    const htmlPath = `/${last}.html`;
-    addForms(htmlPath);
-    addForms(htmlPath.toLowerCase());
-  }
-  return Array.from(set);
+    }`
+  );
+  const posts = data?.posts?.nodes || [];
+  return posts
+    .filter(p => p && typeof p.slug === 'string')
+    .map(p => ({ slug: p.slug.split('/') }));
 }
 
 async function resolveNode(segments?: string[]) {
-  const cs = candidates(segments);
+  // Build URI candidates for the given segments
+  const cs: string[] = [];
+  if (!segments) return { node: null, isPost: false };
+  const uri = '/' + segments.join('/');
+  cs.push(uri);
+  if (!uri.endsWith('/')) cs.push(uri + '/');
+  if (uri.endsWith('/')) cs.push(uri.slice(0, -1));
 
   for (const uri of cs) {
     try {
@@ -120,7 +60,7 @@ async function resolveNode(segments?: string[]) {
         NODE_BY_URI_QUERY,
         { uri },
         revalidate,
-        `node:${uri}`
+        `node:${uri}`,
       );
       if (data?.nodeByUri) {
         const n = data.nodeByUri;
@@ -134,7 +74,7 @@ async function resolveNode(segments?: string[]) {
         POST_BY_URI_QUERY,
         { uri },
         revalidate,
-        `post:${uri}`
+        `post:${uri}`,
       );
       if (p?.post) return { node: p.post, isPost: true };
     } catch {}
@@ -143,7 +83,7 @@ async function resolveNode(segments?: string[]) {
         PAGE_BY_URI_QUERY,
         { uri },
         revalidate,
-        `page:${uri}`
+        `page:${uri}`,
       );
       if (pg?.page) return { node: pg.page, isPost: false };
     } catch {}
@@ -155,7 +95,7 @@ async function resolveNode(segments?: string[]) {
         CATEGORY_BY_SLUG_QUERY,
         { slug: categorySlug },
         revalidate,
-        `cat:${categorySlug}`
+        `cat:${categorySlug}`,
       );
       if (catData?.category) return { node: catData.category, isPost: false };
     } catch {}
@@ -167,7 +107,7 @@ async function resolveNode(segments?: string[]) {
         CATEGORY_BY_SLUG_QUERY,
         { slug: lastSeg },
         revalidate,
-        `cat:${lastSeg}`
+        `cat:${lastSeg}`,
       );
       if (catData?.category) return { node: catData.category, isPost: false };
     } catch {}
@@ -179,9 +119,8 @@ async function resolveNode(segments?: string[]) {
   function metaFromNode(node: any, site: string, fallbackPath: string) {
     const canonical = `${site}${node?.uri || fallbackPath}`;
     const title = node?.title || node?.name || 'Article';
-    const desc = plainText(
-      (node as any)?.excerpt ?? (node as any)?.description ?? node?.content ?? `${title} - Latest news and updates`,
-      160
+    const desc = generateSEODescription(
+      (node as any)?.excerpt ?? (node as any)?.description ?? node?.content ?? `${title} - Latest news and updates`
     );
     return { canonical, title, desc };
   }
@@ -213,7 +152,7 @@ export async function generateMetadata(
       locale: 'hi_IN',
       siteName: process.env.SITE_NAME || 'Pahari Patrika',
       images: node?.featuredImage?.node?.sourceUrl
-        ? [{ url: absoluteUrl(node.featuredImage.node.sourceUrl, site), width: 1200, height: 630, alt: node.title || (node as any)?.name }]
+        ? [{ url: node.featuredImage.node.sourceUrl, width: 1200, height: 630, alt: node.title || (node as any)?.name }]
         : [],
       publishedTime: (node as any)?.date,
       modifiedTime: (node as any)?.modified,
@@ -224,7 +163,7 @@ export async function generateMetadata(
       title: meta.title,
       description: meta.desc,
       images: node?.featuredImage?.node?.sourceUrl
-        ? [absoluteUrl(node.featuredImage.node.sourceUrl, site)]
+        ? [node.featuredImage.node.sourceUrl]
         : [],
     },
   };
@@ -236,9 +175,9 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
     const { node } = await resolveNode(slug);
     if (!node) notFound();
     // Calculate reading length (word count) for meta only (not UI)
-    const wordCount = typeof node?.content === 'string'
-      ? node.content.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
-      : 0;
+    // const wordCount = typeof node?.content === 'string'
+    //   ? node.content.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
+    //   : 0;
 
     // Category listing view
     if (node.__typename === 'Category') {
@@ -320,19 +259,19 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
       '@context': 'https://schema.org',
       '@type': node.__typename === 'Post' ? 'NewsArticle' : 'WebPage',
       headline: node.title,
-      description: plainText(node?.excerpt ?? node?.content),
+  description: generateSEODescription((node?.excerpt ?? node?.content) || ''),
       image: img?.sourceUrl ? { 
         '@type': 'ImageObject', 
-        url: absoluteUrl(img.sourceUrl, site), 
+        url: img.sourceUrl, 
         width: imgWidth, 
         height: imgHeight,
-        caption: plainText(img?.caption || img?.description || '', 240) || (img?.altText || '')
+        caption: (img?.caption || img?.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240) || (img?.altText || '')
       } : undefined,
-      thumbnailUrl: img?.sourceUrl ? absoluteUrl(img.sourceUrl, site) : undefined,
+      thumbnailUrl: img?.sourceUrl ? img.sourceUrl : undefined,
       datePublished: toIsoWithTZ((node as any)?.date),
       dateModified: toIsoWithTZ((node as any)?.modified),
       dateCreated: toIsoWithTZ((node as any)?.date),
-      articleBody: plainText(node?.content),
+  articleBody: (node?.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
       speakable: {
         '@type': 'SpeakableSpecification',
         cssSelector: ['.es-title', '.en-content']
@@ -353,7 +292,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
       inLanguage: 'hi-IN',
       articleSection: node?.categories?.nodes?.[0]?.name,
   keywords: Array.isArray(node?.tags?.nodes) ? node.tags.nodes.map((t: any) => t.name).join(', ') : '',
-  wordCount: typeof node?.content === 'string' ? plainText(node.content).split(/\s+/).filter(Boolean).length : 0
+  wordCount: typeof node?.content === 'string' ? node.content.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length : 0
     });
 
     // Breadcrumb JSON-LD for Article/Page
@@ -363,7 +302,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
     ];
   const articlePosition = Array.isArray(breadcrumbItems) ? breadcrumbItems.length + 1 : 1;
     breadcrumbItems.push({ '@type': 'ListItem', position: articlePosition, name: node.title, item: canonical });
-    const breadcrumbSchema = JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: breadcrumbItems });
+  // const breadcrumbSchema = JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: breadcrumbItems });
 
     function wrapTables(content: string): string {
       return content
@@ -428,25 +367,37 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
       (typeof authorUrl === 'string' && (authorUrl.includes('twitter.com') || authorUrl.includes('x.com')) ? authorUrl : undefined);
 
     // related buckets
-  const sanitizedRelated = Array.isArray(relatedPosts) ? relatedPosts.filter((p: any) => p && p.slug !== node.slug) : [];
-  const latestItems = sanitizedRelated.slice(0, 4);
-  const trendingItems = sanitizedRelated.slice(4, 8);
-  const bottomItems = sanitizedRelated.slice(8, 12);
-  const relatedItems = Array.isArray(bottomItems) && bottomItems.length > 0 ? bottomItems : (Array.isArray(sanitizedRelated) ? sanitizedRelated.slice(0, 4) : []);
+  const _sanitizedRelated = Array.isArray(relatedPosts) ? relatedPosts.filter((p: any) => p && p.slug !== node.slug) : [];
+  // const latestItems = sanitizedRelated.slice(0, 4);
+  // const trendingItems = sanitizedRelated.slice(4, 8);
+  // const bottomItems = sanitizedRelated.slice(8, 12);
+  // const relatedItems = Array.isArray(bottomItems) && bottomItems.length > 0 ? bottomItems : (Array.isArray(sanitizedRelated) ? sanitizedRelated.slice(0, 4) : []);
 
     // small image picker
-    function pickThumb(imgNode?: any): { url?: string; width?: number; height?: number } {
-  const sizes: Array<any> = Array.isArray(imgNode?.mediaDetails?.sizes) ? imgNode.mediaDetails.sizes : [];
-  if (!Array.isArray(sizes) || !sizes.length) return { url: imgNode?.sourceUrl };
-      const byName = (n: string) => sizes.find((s: any) => (s?.name || '').toLowerCase() === n);
-      const t = byName('thumbnail') || byName('medium') ||
-        [...sizes].sort((a, b) => (a?.width || 0) - (b?.width || 0))[0];
-      return { url: t?.sourceUrl || imgNode?.sourceUrl, width: t?.width, height: t?.height };
-    }
+  // function pickThumb(imgNode?: any): { url?: string; width?: number; height?: number } {
+  //   const sizes: Array<any> = Array.isArray(imgNode?.mediaDetails?.sizes) ? imgNode.mediaDetails.sizes : [];
+  //   if (!Array.isArray(sizes) || !sizes.length) return { url: imgNode?.sourceUrl };
+  //   const byName = (n: string) => sizes.find((s: any) => (s?.name || '').toLowerCase() === n);
+  //   const t = byName('thumbnail') || byName('medium') ||
+  //     [...sizes].sort((a, b) => (a?.width || 0) - (b?.width || 0))[0];
+  //   return { url: t?.sourceUrl || imgNode?.sourceUrl, width: t?.width, height: t?.height };
+  // }
 
     return (
       <>
-  <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: schema }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: schema }} />
+        {/* SEO Meta Keywords from tags and Facebook App ID from .env */}
+        <head>
+          {Array.isArray(node?.tags?.nodes) && node.tags.nodes.length > 0 && (
+            <meta
+              name="keywords"
+              content={node.tags.nodes.map((t: any) => t.name).join(', ')}
+            />
+          )}
+          {process.env.NEXT_PUBLIC_FB_APP_ID && (
+            <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FB_APP_ID} />
+          )}
+        </head>
         <main className="es-page">
           {/* ---------- HERO ---------- */}
           <section className="es-hero">
@@ -482,7 +433,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
                         <time dateTime={dt.toISOString()} className="es-time">{mobDateStr}</time>
 
                       </div>
-                      <ShareButtons
+                      <ShareButtonsClient
                         url={canonical}
                         title={node.title}
                         className="es-share es-share--hero"
@@ -494,22 +445,18 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
                 </div>
               </div>
 
-              {img?.sourceUrl && (() => {
-                const photoCaption = plainText(img?.caption || img?.description || '', 240) || (img?.altText || '');
-                const imageAlt = img?.altText || node.title || 'Article image';
-                return (
-                  <ImageCaption
-                    src={absoluteUrl(img.sourceUrl, site)}
-                    alt={imageAlt}
-                    width={768}
-                    height={432}
-                    priority
-                    sizes="(max-width: 768px) 100vw, 768px"
-                    className="es-hero__img"
-                    caption={photoCaption}
-                  />
-                );
-              })()}
+              {img?.sourceUrl && (
+                <ImageCaption
+                  src={img.sourceUrl}
+                  alt={img?.altText || node.title || 'Article image'}
+                  width={768}
+                  height={432}
+                  priority
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  className="es-hero__img"
+                  caption={(img?.caption || img?.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240) || (img?.altText || '')}
+                />
+              )}
             </div>
           </section>
 
@@ -592,7 +539,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
               {/* Share this with a friend */}
               <div className="es-share-section">
                 <h3 className="es-share-section__title">Share this with a friend:</h3>
-                <ShareButtons 
+                <ShareButtonsClient 
                   url={canonical} 
                   title={node.title}
                   networks={['facebook', 'twitter', 'whatsapp', 'copy']}
@@ -648,7 +595,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
 
               {/* Share row */}
               <div className="es-share es-share--row">
-                <ShareButtons url={canonical} title={node.title} />
+                <ShareButtonsClient url={canonical} title={node.title} />
               </div>
 
               {/* Related */}
