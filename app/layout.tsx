@@ -142,37 +142,68 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#b80000" />
-  <link rel="preconnect" href={process.env.WP_GRAPHQL_ENDPOINT?.replace('/graphql', '') || ''} />
-  {/* Speed up DNS/TLS to CMS and media hosts */}
-  <link rel="dns-prefetch" href="https://cms.paharipatrika.in" />
-  <link rel="preconnect" href="https://cms.paharipatrika.in" crossOrigin="" />
-  <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
-  <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="" />
+        <link rel="preconnect" href={process.env.WP_GRAPHQL_ENDPOINT?.replace('/graphql', '') || ''} />
+        {/* Speed up DNS/TLS to CMS and media hosts */}
+        <link rel="dns-prefetch" href="https://cms.paharipatrika.in" />
+        <link rel="preconnect" href="https://cms.paharipatrika.in" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="" />
         <meta name="format-detection" content="telephone=no" />
-        
         {/* Google AdSense */}
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID && (
-          <script
+          <Script
             async
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}`}
             crossOrigin="anonymous"
+            strategy="afterInteractive"
           />
         )}
-        
-        <script
+        {/* Structured Data: Use Script for hydration safety */}
+        <Script
+          id="org-schema"
           type="application/ld+json"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: organizationSchema }}
         />
-        <script
+        <Script
+          id="website-schema"
           type="application/ld+json"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: websiteSchema }}
         />
       </head>
       <body>
-        <Header logoUrl={logoUrl} siteTitle={siteTitle} categories={categories} />
-        {children}
-        <Footer />
-        
+        <nav aria-label="Main navigation">
+          <Header logoUrl={logoUrl} siteTitle={siteTitle} categories={categories} />
+        </nav>
+        <main role="main">
+          {children}
+        </main>
+        <footer role="contentinfo">
+          <Footer />
+        </footer>
+        {/* Google Analytics 4 (GA4) */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <Script
+            async
+            src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+            strategy="afterInteractive"
+          />
+        )}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <Script
+            id="ga4-inline-script"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `,
+            }}
+          />
+        )}
         {/* Twitter/X Embeds Script */}
         <Script
           src="https://platform.twitter.com/widgets.js"

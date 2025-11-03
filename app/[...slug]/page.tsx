@@ -1,3 +1,4 @@
+import './article.css';
 import type { Metadata, ResolvingMetadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -7,6 +8,7 @@ import {
   PAGE_BY_URI_QUERY,
   POST_BY_URI_QUERY,
   CATEGORY_BY_SLUG_QUERY,
+  RELATED_POSTS_QUERY,
 } from '../../lib/queries';
 import ShareButtons from '../../components/ShareButtons';
 import ImageCaption from '../../components/ImageCaption';
@@ -14,6 +16,7 @@ import InArticleAd from '../../components/InArticleAd';
 import ArticleContentWithAds from '../../components/ArticleContentWithAds';
 import SocialEmbeds from '../../components/SocialEmbeds';
 import EmbedProcessor from '../../components/EmbedProcessor';
+import PostCard from '../../components/PostCard';
 import Link from 'next/link';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import './article.css';
@@ -29,28 +32,22 @@ export const dynamicParams = true; // Allow new articles dynamically
 export async function generateStaticParams() {
   try {
     // Fetch recent posts to pre-generate
-    const data = await wpFetch<{ posts: { nodes: Array<{ slug: string; uri: string }> } }>(
+    const data = await wpFetch<{ posts?: { nodes?: Array<{ slug: string; uri: string }> } }>(
       `query RecentPosts {
         posts(first: 100, where: { orderby: { field: DATE, order: DESC } }) {
-          nodes {
-            slug
-            uri
-          }
+          nodes { slug uri }
         }
-      }`,
-      {},
-      3600
+      }
+    `
     );
-    
-    return (data?.posts?.nodes || [])
-      .filter(post => post.uri) // Ensure valid URIs
-      .map((post) => {
-        // Convert /post-slug/ to { slug: ['post-slug'] }
-        const segments = post.uri.split('/').filter(Boolean);
-        return { slug: segments };
-      });
-  } catch (error) {
-    console.error('Error generating static params for posts:', error);
+    // Defensive: ensure data and nodes are arrays
+    const nodes = (data && data.posts && Array.isArray(data.posts.nodes)) ? data.posts.nodes : [];
+    // Example: return nodes.map(p => ({ slug: [p.slug] }))
+    return nodes
+      .filter((p) => p && typeof p.slug === 'string' && p.slug.length > 0)
+      .map((p) => ({ slug: [p.slug] }));
+  } catch (e) {
+    // On error, return empty array to avoid undefined .length
     return [];
   }
 }
@@ -86,7 +83,7 @@ function plainText(html?: string, max = 160) {
 }
 
 function candidates(segments?: string[]) {
-  if (!segments || segments.length === 0) return [];
+  if (!segments || !Array.isArray(segments) || segments.length === 0) return [];
   const joined = '/' + segments.join('/');
   const set = new Set<string>();
   const addForms = (s: string) => {
@@ -104,9 +101,9 @@ function candidates(segments?: string[]) {
   // Only apply when it's a single-segment path (post at root) and not taxonomy routes
   const first = segments[0];
   const isTaxonomy = first === 'category' || first === 'tag' || first === 'author' || first === 'pages';
-  const last = segments[segments.length - 1] || '';
+  const last = Array.isArray(segments) && segments.length > 0 ? segments[segments.length - 1] : '';
   const looksLikeFile = /\.[a-z0-9]+$/i.test(last);
-  if (!isTaxonomy && segments.length === 1 && !looksLikeFile) {
+  if (!isTaxonomy && Array.isArray(segments) && segments.length === 1 && !looksLikeFile) {
     const htmlPath = `/${last}.html`;
     addForms(htmlPath);
     addForms(htmlPath.toLowerCase());
@@ -151,7 +148,7 @@ async function resolveNode(segments?: string[]) {
       if (pg?.page) return { node: pg.page, isPost: false };
     } catch {}
   }
-  if (segments && segments.length >= 2 && segments[0] === 'category') {
+  if (Array.isArray(segments) && segments.length >= 2 && segments[0] === 'category') {
     const categorySlug = segments[1];
     try {
       const catData = await wpFetch<{ category: any }>(
@@ -163,8 +160,8 @@ async function resolveNode(segments?: string[]) {
       if (catData?.category) return { node: catData.category, isPost: false };
     } catch {}
   }
-  if (segments && segments.length) {
-    const lastSeg = segments[segments.length - 1];
+  if (Array.isArray(segments) && segments.length) {
+  const lastSeg = segments.length > 0 ? segments[segments.length - 1] : '';
     try {
       const catData = await wpFetch<{ category: any }>(
         CATEGORY_BY_SLUG_QUERY,
@@ -189,86 +186,63 @@ async function resolveNode(segments?: string[]) {
     return { canonical, title, desc };
   }
 
-  export async function generateMetadata(
-    { params }: { params: ParamPromise },
-    _parent: ResolvingMetadata
-  ): Promise<Metadata> {
-    const { slug } = await params;
-    const { node } = await resolveNode(slug);
-    if (!node) return { title: 'Not found' };
+export async function generateMetadata(
+  { params }: { params: ParamPromise },
+  _parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { slug } = await params;
+  const { node } = await resolveNode(slug);
+  if (!node) return { title: 'Not found' };
 
-    const site = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
-    const meta = metaFromNode(node, site, '/' + (slug || []).join('/'));
+  const site = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const meta = metaFromNode(node, site, '/' + (slug || []).join('/'));
 
-    return {
-      title: `${meta.title} | ${process.env.SITE_NAME || 'Pahari Patrika'}`,
+  return {
+    title: meta.title,
+    description: meta.desc,
+    alternates: { canonical: meta.canonical },
+    robots: {
+      index: true, follow: true,
+      googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large', 'max-snippet': -1 },
+    },
+    openGraph: {
+      title: meta.title,
       description: meta.desc,
-      alternates: { canonical: meta.canonical },
-      robots: {
-        index: true, follow: true,
-        googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large', 'max-snippet': -1 },
-      },
-      openGraph: {
-        title: meta.title,
-        description: meta.desc,
-        url: meta.canonical,
-        type: node.__typename === 'Post' ? 'article' : 'website',
-        locale: 'hi_IN',
-        siteName: process.env.SITE_NAME || 'Pahari Patrika',
-        images: node?.featuredImage?.node?.sourceUrl
-          ? [{
-              url: absoluteUrl(node.featuredImage.node.sourceUrl, site),
-              width: 1200, height: 630,
-              alt: node.title || (node as any)?.name
-            }]
-          : [],
-        publishedTime: (node as any)?.date,
-        modifiedTime: (node as any)?.modified,
-        authors: (node as any)?.author?.node?.name ? [(node as any).author.node.name] : [],
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: meta.title,
-        description: meta.desc,
-        images: node?.featuredImage?.node?.sourceUrl
-          ? [absoluteUrl(node.featuredImage.node.sourceUrl, site)]
-          : [],
-      },
-    };
-  }
+      url: meta.canonical,
+      type: node.__typename === 'Post' ? 'article' : 'website',
+      locale: 'hi_IN',
+      siteName: process.env.SITE_NAME || 'Pahari Patrika',
+      images: node?.featuredImage?.node?.sourceUrl
+        ? [{ url: absoluteUrl(node.featuredImage.node.sourceUrl, site), width: 1200, height: 630, alt: node.title || (node as any)?.name }]
+        : [],
+      publishedTime: (node as any)?.date,
+      modifiedTime: (node as any)?.modified,
+      authors: (node as any)?.author?.node?.name ? [(node as any).author.node.name] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: meta.title,
+      description: meta.desc,
+      images: node?.featuredImage?.node?.sourceUrl
+        ? [absoluteUrl(node.featuredImage.node.sourceUrl, site)]
+        : [],
+    },
+  };
+}
 
-  /* -------------- data for sidebars -------------- */
-  const RELATED_POSTS_QUERY = `
-    query RelatedPosts {
-      posts(first: 12) {
-        nodes {
-          title
-          slug
-          uri
-          date
-          featuredImage {
-            node {
-              sourceUrl
-              altText
-              mediaDetails {
-                sizes { name sourceUrl width height }
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-
-  /* ---------------- page ---------------- */
-  export default async function NodePage({ params }: { params: ParamPromise }) {
+/* ---------------- page ---------------- */
+export default async function NodePage({ params }: { params: ParamPromise }) {
     const { slug } = await params;
     const { node } = await resolveNode(slug);
     if (!node) notFound();
+    // Calculate reading length (word count) for meta only (not UI)
+    const wordCount = typeof node?.content === 'string'
+      ? node.content.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
+      : 0;
 
     // Category listing view
     if (node.__typename === 'Category') {
-      const posts = node.posts?.nodes ?? [];
+      const posts = Array.isArray(node.posts?.nodes) ? node.posts.nodes : [];
       return (
         <main className="es-page">
           <header className="es-cat-header">
@@ -301,12 +275,32 @@ async function resolveNode(segments?: string[]) {
       );
     }
 
-    // Related/Latest/Trending
+    // Related posts by category/tag (using IDs)
     let relatedPosts: any[] = [];
-    try {
-      const relatedData = await wpFetch<{ posts: { nodes: any } }>(RELATED_POSTS_QUERY);
-      relatedPosts = relatedData?.posts?.nodes || [];
-    } catch { relatedPosts = []; }
+    if (node.__typename === 'Post') {
+      const categoryIds = Array.isArray(node.categories?.nodes)
+        ? node.categories.nodes.map((c: any) => c.id).filter(Boolean)
+        : [];
+      const tagIds = Array.isArray(node.tags?.nodes)
+        ? node.tags.nodes.map((t: any) => t.id).filter(Boolean)
+        : [];
+      const excludeIds = node.id ? [node.id] : [];
+      try {
+        const relatedData = await wpFetch<{ posts: { nodes: any[] } }>(
+          RELATED_POSTS_QUERY,
+          {
+            categoryIds,
+            tagIds,
+            excludeIds,
+          },
+          60,
+          `related:${node.slug}`
+        );
+        relatedPosts = relatedData?.posts?.nodes || [];
+      } catch {
+        relatedPosts = [];
+      }
+    }
 
     const img = node?.featuredImage?.node || null;
     const site = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
@@ -358,8 +352,8 @@ async function resolveNode(segments?: string[]) {
       url: canonical,
       inLanguage: 'hi-IN',
       articleSection: node?.categories?.nodes?.[0]?.name,
-      keywords: node?.tags?.nodes?.map((t: any) => t.name).join(', '),
-      wordCount: plainText(node?.content).split(/\s+/).filter(Boolean).length
+  keywords: Array.isArray(node?.tags?.nodes) ? node.tags.nodes.map((t: any) => t.name).join(', ') : '',
+  wordCount: typeof node?.content === 'string' ? plainText(node.content).split(/\s+/).filter(Boolean).length : 0
     });
 
     // Breadcrumb JSON-LD for Article/Page
@@ -367,7 +361,7 @@ async function resolveNode(segments?: string[]) {
       { '@type': 'ListItem', position: 1, name: 'Home', item: site },
       ...(primaryCategory?.slug ? [{ '@type': 'ListItem', position: 2, name: primaryCategory.name, item: `${site}${getCategoryUrl(primaryCategory)}` }] : []),
     ];
-    const articlePosition = breadcrumbItems.length + 1;
+  const articlePosition = Array.isArray(breadcrumbItems) ? breadcrumbItems.length + 1 : 1;
     breadcrumbItems.push({ '@type': 'ListItem', position: articlePosition, name: node.title, item: canonical });
     const breadcrumbSchema = JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: breadcrumbItems });
 
@@ -384,7 +378,7 @@ async function resolveNode(segments?: string[]) {
       let result = '';
       let paragraphCount = 0;
       
-      for (let i = 0; i < paragraphs.length; i++) {
+  for (let i = 0; i < (Array.isArray(paragraphs) ? paragraphs.length : 0); i++) {
         // Add the paragraph back
         if (paragraphs[i].trim()) {
           result += paragraphs[i] + '</p>';
@@ -394,7 +388,7 @@ async function resolveNode(segments?: string[]) {
             paragraphCount++;
             
             // Insert ad after every 2 paragraphs
-            if (paragraphCount % 2 === 0 && i < paragraphs.length - 1) {
+            if (paragraphCount % 2 === 0 && i < (Array.isArray(paragraphs) ? paragraphs.length - 1 : 0)) {
               result += `<div class="article-ad-slot" data-ad-position="${Math.floor(paragraphCount / 2)}"></div>`;
             }
           }
@@ -434,16 +428,16 @@ async function resolveNode(segments?: string[]) {
       (typeof authorUrl === 'string' && (authorUrl.includes('twitter.com') || authorUrl.includes('x.com')) ? authorUrl : undefined);
 
     // related buckets
-    const sanitizedRelated = relatedPosts.filter((p: any) => p.slug !== node.slug);
-    const latestItems = sanitizedRelated.slice(0, 4);
-    const trendingItems = sanitizedRelated.slice(4, 8);
-    const bottomItems = sanitizedRelated.slice(8, 12);
-    const relatedItems = bottomItems.length > 0 ? bottomItems : sanitizedRelated.slice(0, 4);
+  const sanitizedRelated = Array.isArray(relatedPosts) ? relatedPosts.filter((p: any) => p && p.slug !== node.slug) : [];
+  const latestItems = sanitizedRelated.slice(0, 4);
+  const trendingItems = sanitizedRelated.slice(4, 8);
+  const bottomItems = sanitizedRelated.slice(8, 12);
+  const relatedItems = Array.isArray(bottomItems) && bottomItems.length > 0 ? bottomItems : (Array.isArray(sanitizedRelated) ? sanitizedRelated.slice(0, 4) : []);
 
     // small image picker
     function pickThumb(imgNode?: any): { url?: string; width?: number; height?: number } {
-      const sizes: Array<any> = imgNode?.mediaDetails?.sizes || [];
-      if (!sizes.length) return { url: imgNode?.sourceUrl };
+  const sizes: Array<any> = Array.isArray(imgNode?.mediaDetails?.sizes) ? imgNode.mediaDetails.sizes : [];
+  if (!Array.isArray(sizes) || !sizes.length) return { url: imgNode?.sourceUrl };
       const byName = (n: string) => sizes.find((s: any) => (s?.name || '').toLowerCase() === n);
       const t = byName('thumbnail') || byName('medium') ||
         [...sizes].sort((a, b) => (a?.width || 0) - (b?.width || 0))[0];
@@ -486,6 +480,7 @@ async function resolveNode(segments?: string[]) {
                           </div>
                         )}
                         <time dateTime={dt.toISOString()} className="es-time">{mobDateStr}</time>
+
                       </div>
                       <ShareButtons
                         url={canonical}
@@ -522,6 +517,7 @@ async function resolveNode(segments?: string[]) {
           <div className="es-container es-layout">
             {/* LEFT: article */}
             <article className="es-article">
+
               <div className="es-article__body">
                 <SocialEmbeds />
                 <ArticleContentWithAds 
@@ -530,6 +526,7 @@ async function resolveNode(segments?: string[]) {
                 />
                 <EmbedProcessor content={processedContent} />
               </div>
+
 
               {/* Author Box - E-E-A-T Compliant */}
               {node.author?.node && (
@@ -559,10 +556,10 @@ async function resolveNode(segments?: string[]) {
                       </div>
                       {node.author.node.description && (
                         <div className="es-author-eeat__bio">
-                          {node.author.node.description.length > 120 
+                          {typeof node.author.node.description === 'string' && node.author.node.description.length > 120 
                             ? `${node.author.node.description.substring(0, 120)}...` 
                             : node.author.node.description}
-                          {node.author.node.description.length > 120 && node.author.node.slug && (
+                          {typeof node.author.node.description === 'string' && node.author.node.description.length > 120 && node.author.node.slug && (
                             <Link href={`/author/${node.author.node.slug}`} className="es-author-eeat__know-more">
                               {' '}Know More
                             </Link>
@@ -611,42 +608,32 @@ async function resolveNode(segments?: string[]) {
               />
 
               {/* Related Topics Tags */}
-              {Array.isArray(node?.tags?.nodes) && node.tags.nodes.length > 0 && (
-                <div className="es-related-topics">
-                  <h3 className="es-related-topics__title">Posts On Related Topics <span className="es-slash">/</span></h3>
-                  <div className="es-topic-tags">
-                    {node.tags.nodes.map((t: any) => (
-                      <Link key={t.slug} href={getTagUrl(t)} className="es-topic-tag">
-                        {t.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Related topics/tags feature removed as per request */}
+
 
               {/* Related Articles */}
-              {relatedItems.length > 0 && (
-                <div className="es-related-articles">
-                  {relatedItems.slice(0, 3).map((post: any) => {
-                    const href = getPostUrl(post);
-                    return (
-                      <Link href={href} key={post.slug} className="es-related-article" prefetch={false}>
-                        {post?.featuredImage?.node?.sourceUrl && (
-                          <div className="es-related-article__image">
-                            <Image
-                              src={absoluteUrl(post.featuredImage.node.sourceUrl, site)}
-                              alt={post.featuredImage?.node?.altText || post.title}
-                              width={768}
-                              height={432}
-                              sizes="(max-width: 768px) 100vw, 768px"
-                            />
-                          </div>
-                        )}
-                        <h4 className="es-related-article__title">{post.title}</h4>
-                      </Link>
-                    );
-                  })}
-                </div>
+              {Array.isArray(relatedPosts) && relatedPosts.length > 0 && (
+                <section className="es-related-articles">
+                  <h3 className="es-related-articles__title">Posts On Related Topics</h3>
+                  {Array.isArray(node?.tags?.nodes) && node.tags.nodes.length > 0 && (
+                    <div className="es-article-tags-nav-outer">
+                      <nav className="es-article-tags-nav" aria-label="Article tags">
+                        <ul className="es-article-tags-nav__list">
+                          {node.tags.nodes.map((tag: any) => (
+                            <li key={tag.slug} className="es-article-tags-nav__item">
+                              <a href={`/tag/${tag.slug}`} className="es-article-tags-nav__link">{tag.name}</a>
+                            </li>
+                          ))}
+                        </ul>
+                      </nav>
+                    </div>
+                  )}
+                  <div className="es-related-articles__list">
+                    {relatedPosts.map((post: any) => (
+                      <PostCard key={post.slug} post={post} />
+                    ))}
+                  </div>
+                </section>
               )}
 
               {/* Ad after Related Articles - 300x250 */}
@@ -657,13 +644,7 @@ async function resolveNode(segments?: string[]) {
               />
 
               {/* Tags */}
-              {Array.isArray(node?.tags?.nodes) && node.tags.nodes.length > 0 && (
-                <div className="es-tags">
-                  {node.tags.nodes.map((t: any) => (
-                    <span key={t.slug} className="es-tag">#{t.name}</span>
-                  ))}
-                </div>
-              )}
+
 
               {/* Share row */}
               <div className="es-share es-share--row">
@@ -671,93 +652,14 @@ async function resolveNode(segments?: string[]) {
               </div>
 
               {/* Related */}
-              {relatedItems.length > 0 && (
-                <section className="es-related" aria-label="More articles">
-                  <h2 className="es-related__title">
-                    More from {process.env.SITE_NAME || 'Pahari Patrika'}
-                    {primaryCategory?.name ? ` on ${primaryCategory.name}` : ''}
-                  </h2>
-                  <div className="es-related__grid">
-                    {relatedItems.map((post: any) => {
-                      const t = pickThumb(post?.featuredImage?.node);
-                      const thumbUrl = t?.url ? absoluteUrl(t.url, site) : undefined;
-                      const href = getPostUrl(post);
-                      return (
-                        <Link href={href} key={post.slug} className="es-related__card" prefetch={false}>
-                          {thumbUrl && (
-                            <span className="es-related__media">
-                              <Image
-                                src={thumbUrl}
-                                alt={post.featuredImage?.node?.altText || post.title}
-                                fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 45vw, 320px"
-                              />
-                            </span>
-                          )}
-                          <h3 className="es-related__h3">{post.title}</h3>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
+              {/* Related section removed as per request */}
             </article>
 
             {/* RIGHT: sidebar */}
             <aside className="es-sidebar">
-              {latestItems.length > 0 && (
-                <div className="es-panel">
-                  <h3 className="es-panel__title">LATEST UPDATES</h3>
-                  <ul className="es-list es-list--latest">
-                    {latestItems.map((post: any) => {
-                      const thumb = pickThumb(post?.featuredImage?.node);
-                      const href = getPostUrl(post);
-                      return (
-                        <li key={`latest-${post.slug}`}>
-                          <Link href={href} className="es-list__item" prefetch={false}>
-                            {thumb?.url && (
-                              <span className="es-list__thumb">
-                                <Image src={absoluteUrl(thumb.url, site)} alt={post.featuredImage?.node?.altText || post.title} fill sizes="96px" />
-                              </span>
-                            )}
-                            <span className="es-list__content">
-                              <span className="es-list__title">{post.title}</span>
-                              <span className="es-list__time">{timeAgo(post.date)}</span>
-                            </span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
+              {/* Latest updates panel removed as per request */}
 
-              {trendingItems.length > 0 && (
-                <div className="es-panel">
-                  <h3 className="es-panel__title">TRENDING STORIES</h3>
-                  <ul className="es-list es-list--trend">
-                    {trendingItems.map((post: any, index: number) => {
-                      const thumb = pickThumb(post?.featuredImage?.node);
-                      const href = getPostUrl(post);
-                      return (
-                        <li key={`trending-${post.slug}`}>
-                          <Link href={href} className="es-list__item" prefetch={false}>
-                            {thumb?.url && (
-                              <span className="es-list__thumb es-list__thumb--badge">
-                                <Image src={absoluteUrl(thumb.url, site)} alt={post.featuredImage?.node?.altText || post.title} fill sizes="96px" />
-                                <span className="es-badge">{(index + 1).toString().padStart(2, '0')}</span>
-                              </span>
-                            )}
-                            <span className="es-list__content">
-                              <span className="es-list__title">{post.title}</span>
-                              <span className="es-list__time">{timeAgo(post.date)}</span>
-                            </span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
+              {/* Trending stories panel removed as per request */}
             </aside>
           </div>
         </main>

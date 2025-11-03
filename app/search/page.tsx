@@ -29,14 +29,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   return (
     <div className="container">
       <h1>Search</h1>
-      <form action="/search" method="get" style={{display:'flex', gap:'0.5rem', marginBottom:'1rem'}}>
-        <input name="q" defaultValue={q} placeholder="Search articles..." style={{flex:1, padding:'0.6rem 0.75rem', border:'1px solid #e5e7eb', borderRadius:8}} />
-        <button type="submit" style={{padding:'0.6rem 0.9rem', border:'1px solid #e5e7eb', background:'#111', color:'#fff', borderRadius:8, cursor:'pointer'}}>Search</button>
+      <form action="/search" method="get" className="search-form">
+        <input name="q" defaultValue={q} placeholder="Search articles..." className="search-input" />
+        <button type="submit" className="search-btn">Search</button>
       </form>
       {!q && <p className="meta">Tip: Try searching for a headline or keyword.</p>}
       {q && <p className="meta">Showing results for: <strong>{q}</strong></p>}
-      <section className="card" style={{padding:'0.5rem 0'}}>
-        {q && posts.length === 0 && <p style={{padding:'1rem'}}>No results.</p>}
+      <section className="card search-card">
+        {q && posts.length === 0 && <p className="search-no-results">No results.</p>}
         {posts.map((p:any)=> <PostCard key={p.id} post={p} />)}
       </section>
     </div>

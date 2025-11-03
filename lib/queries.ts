@@ -1,3 +1,31 @@
+// Related posts by category or tag (limit 6, exclude current post by ID)
+export const RELATED_POSTS_QUERY = `
+  query RelatedPosts($categoryIds: [ID!], $tagIds: [ID!], $excludeIds: [ID!]) {
+    posts(
+      first: 6,
+      where: {
+        categoryIn: $categoryIds
+        tagIn: $tagIds
+        notIn: $excludeIds
+        orderby: { field: DATE, order: DESC }
+        status: PUBLISH
+      }
+    ) {
+      nodes {
+        id
+        title
+        slug
+        uri
+        date
+        excerpt
+        featuredImage { node { sourceUrl altText } }
+        categories { nodes { name slug id } }
+        tags { nodes { name slug id } }
+        author { node { name } }
+      }
+    }
+  }
+`;
 // Query for author details and their posts by slug
 export const AUTHOR_BY_SLUG_QUERY = `
   query AuthorBySlug($slug: ID!, $first: Int = 10, $after: String) {

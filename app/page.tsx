@@ -212,7 +212,7 @@ export default async function Home() {
                       style={{ objectFit: 'cover' }}
                     />
                   )}
-                  {featured.categories?.nodes && featured.categories.nodes.length > 0 && (
+                  {Array.isArray(featured.categories?.nodes) && featured.categories.nodes.length > 0 && (
                     <span className={`category-badge ${featured.categories.nodes[0].slug}`}>
                       {featured.categories.nodes[0].name}
                     </span>
@@ -257,7 +257,7 @@ export default async function Home() {
                         style={{ objectFit: 'cover' }}
                       />
                     )}
-                    {post.categories?.nodes && post.categories.nodes.length > 0 && (
+                    {Array.isArray(post.categories?.nodes) && post.categories.nodes.length > 0 && (
                       <span className={`category-badge ${post.categories.nodes[0].slug}`}>
                         {post.categories.nodes[0].name}
                       </span>
