@@ -1,5 +1,4 @@
 import './article.css';
-import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { wpFetch } from '../../lib/graphql';
 import {
@@ -31,7 +30,10 @@ type ParamPromise = Promise<{ slug?: string[] }>;
 async function resolveNode(segments?: string[]) {
   // Build URI candidates for the given segments
   const cs: string[] = [];
-  if (!segments) return { node: null, isPost: false };
+  if (!segments) {
+    console.log('[resolveNode] No segments provided');
+    return { node: null, isPost: false };
+  }
   const uri = '/' + segments.join('/');
   cs.push(uri);
   if (!uri.endsWith('/')) cs.push(uri + '/');
@@ -47,9 +49,12 @@ async function resolveNode(segments?: string[]) {
       );
       if (data?.nodeByUri) {
         const n = data.nodeByUri;
+        console.log(`[resolveNode] nodeByUri hit for uri: ${uri}, typename: ${n.__typename}`);
         return { node: n, isPost: n.__typename === 'Post' };
       }
-    } catch {}
+    } catch (e) {
+      console.log(`[resolveNode] nodeByUri error for uri: ${uri}`, e);
+    }
   }
   for (const uri of cs) {
     try {
@@ -59,8 +64,13 @@ async function resolveNode(segments?: string[]) {
         undefined,
         `post:${uri}`,
       );
-      if (p?.post) return { node: p.post, isPost: true };
-    } catch {}
+      if (p?.post) {
+        console.log(`[resolveNode] post hit for uri: ${uri}`);
+        return { node: p.post, isPost: true };
+      }
+    } catch (e) {
+      console.log(`[resolveNode] post error for uri: ${uri}`, e);
+    }
     try {
       const pg = await wpFetch<{ page: any }>(
         PAGE_BY_URI_QUERY,
@@ -68,8 +78,13 @@ async function resolveNode(segments?: string[]) {
         undefined,
         `page:${uri}`,
       );
-      if (pg?.page) return { node: pg.page, isPost: false };
-    } catch {}
+      if (pg?.page) {
+        console.log(`[resolveNode] page hit for uri: ${uri}`);
+        return { node: pg.page, isPost: false };
+      }
+    } catch (e) {
+      console.log(`[resolveNode] page error for uri: ${uri}`, e);
+    }
   }
   if (Array.isArray(segments) && segments.length >= 2 && segments[0] === 'category') {
     const categorySlug = segments[1];
@@ -80,11 +95,18 @@ async function resolveNode(segments?: string[]) {
         undefined,
         `cat:${categorySlug}`,
       );
-      if (catData?.category) return { node: catData.category, isPost: false };
-    } catch {}
+      if (catData?.category) {
+        console.log(`[resolveNode] category hit for slug: ${categorySlug}`);
+        return { node: catData.category, isPost: false };
+      } else {
+        console.log(`[resolveNode] category miss for slug: ${categorySlug}`);
+      }
+    } catch (e) {
+      console.log(`[resolveNode] category error for slug: ${categorySlug}`, e);
+    }
   }
   if (Array.isArray(segments) && segments.length) {
-  const lastSeg = segments.length > 0 ? segments[segments.length - 1] : '';
+    const lastSeg = segments.length > 0 ? segments[segments.length - 1] : '';
     try {
       const catData = await wpFetch<{ category: any }>(
         CATEGORY_BY_SLUG_QUERY,
@@ -92,9 +114,17 @@ async function resolveNode(segments?: string[]) {
         undefined,
         `cat:${lastSeg}`,
       );
-      if (catData?.category) return { node: catData.category, isPost: false };
-    } catch {}
+      if (catData?.category) {
+        console.log(`[resolveNode] fallback category hit for slug: ${lastSeg}`);
+        return { node: catData.category, isPost: false };
+      } else {
+        console.log(`[resolveNode] fallback category miss for slug: ${lastSeg}`);
+      }
+    } catch (e) {
+      console.log(`[resolveNode] fallback category error for slug: ${lastSeg}`, e);
+    }
   }
+  console.log('[resolveNode] No node found for segments:', segments);
   return { node: null, isPost: false };
 }
 
@@ -147,47 +177,67 @@ export async function generateMetadata(
 /* ---------------- page ---------------- */
 export default async function NodePage({ params }: { params: ParamPromise }) {
     const { slug } = await params;
+    console.log('[NodePage] params.slug:', slug);
+    // Visible debug message for slug
+    if (!slug || !Array.isArray(slug) || slug.length === 0) {
+      return <div style={{color:'red',fontWeight:'bold'}}>DEBUG: No slug found in params</div>;
+    }
     const { node } = await resolveNode(slug);
-    if (!node) notFound();
+    if (!node) {
+      console.log('[NodePage] notFound for slug:', slug);
+      return <div style={{color:'red',fontWeight:'bold'}}>DEBUG: No node found for slug: {JSON.stringify(slug)}</div>;
+    }
     // Calculate reading length (word count) for meta only (not UI)
     // const wordCount = typeof node?.content === 'string'
     //   ? node.content.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
     //   : 0;
 
     // Category listing view
-    if (node.__typename === 'Category') {
-      const posts = Array.isArray(node.posts?.nodes) ? node.posts.nodes : [];
-      return (
-        <main className="es-page">
-          <header className="es-cat-header">
-            <div className="es-container">
-              <h1 className="es-cat-title">{node.name}</h1>
-            </div>
-          </header>
+      if (node.__typename === 'Category') {
+        const posts = Array.isArray(node.posts?.nodes) ? node.posts.nodes : [];
+        return (
+          <main className="es-page">
+            <header className="es-cat-header">
+              <div className="es-container">
+                <h1 className="es-cat-title">{node.name}</h1>
+              </div>
+            </header>
 
-          <section className="es-container es-grid es-grid--cards" aria-label={`Posts in ${node.name}`}>
-            {posts.map((p: any) => (
-              <Link href={getPostUrl(p)} key={p.slug} className="es-card" prefetch={false}>
-                {p.featuredImage?.node?.sourceUrl && (
-                  <div style={{ position: 'relative', width: '100%', height: '200px' }}>
-                    <Image 
-                      src={p.featuredImage.node.sourceUrl} 
-                      alt={p.featuredImage.node.altText || p.title} 
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      style={{ objectFit: 'cover' }}
-                      loading="lazy"
-                    />
+            <section className="es-container es-grid es-grid--cards" aria-label={`Posts in ${node.name}`}>
+              {posts.length === 0 && (
+                <>
+                  <div style={{color:'red',fontWeight:'bold'}}>No posts found for this category.</div>
+                  <pre style={{background:'#222',color:'#fff',padding:'1em',overflow:'auto',fontSize:'12px'}}>
+                    {`DEBUG posts:\n${JSON.stringify(posts, null, 2)}`}
+                  </pre>
+                </>
+              )}
+              {posts.map((p: any) => (
+                <Link href={getPostUrl(p)} key={p.slug} className="es-card" prefetch={false}>
+                  {p.featuredImage?.node?.sourceUrl && (
+                    <div style={{ position: 'relative', width: '100%', height: '200px' }}>
+                      <Image 
+                        src={p.featuredImage.node.sourceUrl} 
+                        alt={p.featuredImage.node.altText || p.title} 
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        style={{ objectFit: 'cover' }}
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+                  <div className="es-card-content">
+                    <h2 className="es-card-title">{p.title}</h2>
+                    {p.excerpt && (
+                      <div className="es-card-excerpt" dangerouslySetInnerHTML={{ __html: p.excerpt }} />
+                    )}
                   </div>
-                )}
-                <h3 className="es-card__title">{p.title}</h3>
-                {p.excerpt && <div className="es-card__excerpt" dangerouslySetInnerHTML={{ __html: p.excerpt }} />}
-              </Link>
-            ))}
-          </section>
-        </main>
-      );
-    }
+                </Link>
+              ))}
+            </section>
+          </main>
+        );
+      }
 
     // Related posts by category/tag (using IDs)
     let relatedPosts: any[] = [];
@@ -307,9 +357,21 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
   //   return { url: t?.sourceUrl || imgNode?.sourceUrl, width: t?.width, height: t?.height };
   // }
 
+    // Inject NewsArticle/Yoast schema only for article pages
+    let yoastSchema = '';
+    if (node.__typename === 'Post' && node.seo?.schema?.raw) {
+      yoastSchema = node.seo.schema.raw;
+    }
+
     return (
       <>
-        {/* Only Yoast schema will be injected via generateMetadata. No static or custom schema here. */}
+        {/* Inject Yoast/NewsArticle schema only for article pages */}
+        {yoastSchema && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: yoastSchema }}
+          />
+        )}
         <main className="es-page">
           {/* ---------- HERO ---------- */}
           <section className="es-hero">

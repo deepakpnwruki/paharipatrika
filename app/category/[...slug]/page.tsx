@@ -5,42 +5,46 @@ import { CATEGORY_BY_SLUG_QUERY } from '../../../lib/queries';
 import { getPostUrl } from '../../../lib/url-helpers';
 
 interface CategoryData {
-  categories: {
-    nodes: Array<{
-      name: string;
-      slug: string;
-      title: string;
-      excerpt: string;
-      featuredImage: {
-        node: {
-          sourceUrl: string;
-          altText: string;
-        };
-      };
-      posts?: {
-        nodes: Array<{
-          slug: string;
-          title: string;
-          excerpt: string;
-          featuredImage: {
-            node: {
-              sourceUrl: string;
-              altText: string;
-            };
+  category: {
+    id: string;
+    name: string;
+    description: string;
+    slug: string;
+    uri: string;
+    count: number;
+    posts?: {
+      nodes: Array<{
+        slug: string;
+        title: string;
+        excerpt: string;
+        date: string;
+        uri: string;
+        author?: { node: { name: string } };
+        featuredImage?: {
+          node: {
+            sourceUrl: string;
+            altText: string;
           };
-        }>;
+        };
+        categories?: { nodes: Array<{ name: string; slug: string }> };
+      }>;
+      pageInfo?: {
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+        startCursor: string;
+        endCursor: string;
       };
-    }>;
+    };
   };
 }
 
 export const revalidate = 300;
 
-export default async function CategoryPage({ params }: { params: Promise<{ slug: string[] }> }) {
-  const { slug: slugArray } = await params;
+export default async function CategoryPage(props: { params: { slug: string[] } }) {
+  const slugArray = props.params.slug;
   const slug = slugArray[slugArray.length - 1]; // Get last segment
   const data = await wpFetch<CategoryData>(CATEGORY_BY_SLUG_QUERY, { slug });
-  const category = data?.categories?.nodes?.[0];
+  const category = data?.category;
 
   if (!category) notFound();
 

@@ -171,10 +171,29 @@ export default async function AuthorPage({ params }: Props) {
     return <div>{error}</div>;
   }
 
-  // Only Yoast schema will be injected via generateMetadata. No static or custom schema here.
+  // Inject Person schema (Yoast-style) for author page
+  const siteUrl = (process.env.SITE_URL || 'https://paharipatrika.in').replace(/\/$/, '');
+  const authorUrl = `${siteUrl}/author/${author.slug}`;
+  const personSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": author.name,
+    "description": author.description || '',
+    "url": authorUrl,
+    ...(author.avatar?.url ? { "image": author.avatar.url } : {}),
+    ...(author.facebookUrl ? { "sameAs": [author.facebookUrl] } : {}),
+    ...(author.twitterUrl ? { "sameAs": [author.twitterUrl] } : {}),
+    ...(author.linkedinUrl ? { "sameAs": [author.linkedinUrl] } : {}),
+  });
 
   return (
-    <main className="author-page">
+    <>
+      {/* Inject Person schema for author page */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: personSchema }}
+      />
+      <main className="author-page">
       {/* Only Yoast schema will be injected via generateMetadata. */}
       <section className="author-hero">
         <div className="author-avatar">
@@ -246,5 +265,6 @@ export default async function AuthorPage({ params }: Props) {
         )}
       </section>
     </main>
+    </>
   );
 }
