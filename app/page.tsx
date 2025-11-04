@@ -2,59 +2,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { wpFetch } from '../lib/graphql';
 import AuthorLink from '../components/AuthorLink';
-import type { Metadata } from 'next';
+// import type { Metadata } from 'next';
 import './homepage.css';
 import { getPostUrl } from '../lib/url-helpers';
 
-// SEO: Generate metadata for homepage
-export async function generateMetadata(): Promise<Metadata> {
-  const siteName = process.env.SITE_NAME || 'Pahari Patrika';
-  const siteUrl = (process.env.SITE_URL || 'https://paharipatrika.in').replace(/\/$/, '');
-  const description = `${siteName} - Latest breaking news, current affairs, and in-depth analysis. Stay informed with trusted journalism in Hindi.`;
-  
-  return {
-    title: `${siteName} - Latest News, Breaking News, Current Affairs in Hindi`,
-    description,
-    keywords: ['news', 'breaking news', 'latest news', 'hindi news', 'current affairs', siteName.toLowerCase()],
-    alternates: {
-      canonical: siteUrl,
-    },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        'max-video-preview': -1,
-        'max-image-preview': 'large',
-        'max-snippet': -1,
-      },
-    },
-    openGraph: {
-      title: `${siteName} - Your trusted source for news`,
-      description,
-      url: siteUrl,
-      type: 'website',
-      locale: 'hi_IN',
-      siteName,
-      images: [{
-        url: `${siteUrl}/og-image.jpg`,
-        width: 1200,
-        height: 630,
-        alt: siteName,
-      }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: siteName,
-      description,
-      images: [`${siteUrl}/og-image.jpg`],
-    },
-    other: {
-      'google-site-verification': process.env.GOOGLE_SITE_VERIFICATION || '',
-    },
-  };
-}
+// Static homepage metadata removed. Only Yoast SEO will be used.
 
 const HOMEPAGE_POSTS_QUERY = `
   query HomepagePosts {

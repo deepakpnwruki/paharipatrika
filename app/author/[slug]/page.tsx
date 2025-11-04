@@ -1,6 +1,6 @@
 import { wpFetch } from '../../../lib/graphql';
 import { AUTHOR_BY_SLUG_QUERY, AUTHOR_POST_COUNT_QUERY } from '../../../lib/queries';
-import { generateAuthorProfileSchema } from '../../../lib/structured-data';
+// ...existing code...
 // import { getPostUrl } from '../../../lib/url-helpers';
 // import Link from 'next/link';
 import Image from 'next/image';
@@ -171,49 +171,11 @@ export default async function AuthorPage({ params }: Props) {
     return <div>{error}</div>;
   }
 
-  const siteUrl = (process.env.SITE_URL || 'https://edunews.com').replace(/\/$/, '');
-  const authorSchema = generateAuthorProfileSchema(author, siteUrl);
-  
-  // Breadcrumb schema for SEO
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: siteUrl,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: 'Authors',
-        item: `${siteUrl}/author`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: author.name,
-        item: `${siteUrl}/author/${slug}`,
-      },
-    ],
-  };
+  // Only Yoast schema will be injected via generateMetadata. No static or custom schema here.
 
   return (
     <main className="author-page">
-      {/* E-E-A-T: Author structured data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(authorSchema) }}
-      />
-      
-      {/* Breadcrumb structured data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-      
+      {/* Only Yoast schema will be injected via generateMetadata. */}
       <section className="author-hero">
         <div className="author-avatar">
           {author.avatar?.url && (

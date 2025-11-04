@@ -93,52 +93,12 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
     notFound();
   }
 
-  const site = (process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
-  const canonical = `${site}${normalizeUrl(page.uri)}`;
-  const description = (page?.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160) || page.title;
-  const img = page?.featuredImage?.node;
-  const imgWidth = img?.mediaDetails?.width || 1200;
-  const imgHeight = img?.mediaDetails?.height || 630;
-
-  const webPageSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name: page.title,
-    description,
-    url: canonical,
-    inLanguage: 'hi-IN',
-    primaryImageOfPage: img?.sourceUrl ? {
-      '@type': 'ImageObject',
-      url: img.sourceUrl,
-      width: imgWidth,
-      height: imgHeight,
-    } : undefined,
-    isPartOf: {
-      '@type': 'WebSite',
-      name: process.env.SITE_NAME || 'Pahari Patrika',
-      url: site,
-    },
-  };
-
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: site },
-      { '@type': 'ListItem', position: 2, name: page.title, item: canonical },
-    ],
-  };
-
   return (
-    <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
-      <main className="en-page">
-        <div className="container en-page-content">
-          <h1 className="en-page-title">{page.title}</h1>
-          <div className="en-page-body" dangerouslySetInnerHTML={{ __html: page.content }} />
-        </div>
-      </main>
-    </>
+    <main className="en-page">
+      <div className="container en-page-content">
+        <h1 className="en-page-title">{page.title}</h1>
+        <div className="en-page-body" dangerouslySetInnerHTML={{ __html: page.content }} />
+      </div>
+    </main>
   );
 }

@@ -160,53 +160,11 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const _pageInfo = category.posts?.pageInfo;
   const totalPosts = category.count || 0;
   const totalPages = Math.max(1, Math.ceil(totalPosts / postsPerPage));
-  const siteUrl = (process.env.SITE_URL || '').replace(/\/$/, '');
+  // ...existing code...
   // const _firstPost = posts[0];
   // const _morePosts = posts.slice(1);
 
-  const structuredData = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": category.name,
-    "description": category.description || `${category.name} समाचार`,
-  "url": `${siteUrl}${normalizeUrl(category.uri)}`,
-    "breadcrumb": {
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "होम",
-          "item": siteUrl
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": category.name,
-          "item": `${siteUrl}${normalizeUrl(category.uri)}`
-        }
-      ]
-    },
-    "mainEntity": {
-      "@type": "ItemList",
-      "itemListElement": posts.map((post: any, index: number) => {
-        const img = post?.featuredImage?.node?.sourceUrl as string | undefined;
-        const absoluteImg = img
-          ? (/^https?:\/\//i.test(img) ? img : `${siteUrl}${img.startsWith('/') ? '' : '/'}${img}`)
-          : undefined;
-        return {
-          "@type": "ListItem",
-          "position": index + 1,
-          "item": {
-            "@type": "Article",
-            "url": `${siteUrl}${getPostUrl(post)}`,
-            "name": post.title,
-            ...(absoluteImg ? { "image": absoluteImg } : {})
-          }
-        };
-      })
-    }
-  });
+  // Only Yoast schema will be injected via generateMetadata. No static or custom schema here.
 
   // SEO pagination rel links
   // const canonicalUrl = page === 1 ? `${siteUrl}${category.uri}` : `${siteUrl}${category.uri}?page=${page}`;
@@ -215,12 +173,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   return (
     <>
-  {/** Canonical/prev/next are managed via generateMetadata; avoid manual <link> tags to prevent stale head elements across navigations. */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: structuredData }}
-      />
-      
+      {/* Only Yoast schema will be injected via generateMetadata. */}
       <main className="category-page">
         <div className="category-container">
           {/* Breadcrumb */}

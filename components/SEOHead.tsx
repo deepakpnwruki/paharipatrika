@@ -28,18 +28,4 @@ export function generateMetadata(seoData: SEOData): Metadata {
   };
 }
 
-export function StructuredData({ data }: { data: any[] }) {
-  return (
-    <>
-      {data.map((schema, index) => (
-        <script
-          key={index}
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(schema),
-          }}
-        />
-      ))}
-    </>
-  );
-}
+

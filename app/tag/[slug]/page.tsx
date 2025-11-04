@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { wpFetch } from '../../../lib/graphql';
 import { TAG_BY_SLUG_QUERY } from '../../../lib/queries';
-import { normalizeUrl, getPostUrl } from '../../../lib/url-helpers';
+import { normalizeUrl } from '../../../lib/url-helpers';
 import TagPostsList from '../../../components/TagPostsList';
 import './tag-page.css';
 
@@ -47,11 +47,11 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
     
     if (!tag) return { title: 'Tag Not Found' };
     
-  const site = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
-  const tagUrl = `${site}${normalizeUrl(`/tag/${slug}`)}`;
+    const site = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const tagUrl = `${site}${normalizeUrl(`/tag/${slug}`)}`;
     const description = tag.description || `Articles tagged with ${tag.name} - Latest news and updates`;
     const titleText = `${tag.name} | ${process.env.SITE_NAME || 'Pahari Patrika'}`;
-    
+
     return {
       title: titleText,
       description,
@@ -115,57 +115,15 @@ export default async function TagPage({ params }: TagPageProps) {
   const endCursor = tag.posts?.pageInfo?.endCursor || null;
   const totalPosts = tag.count || 0;
   const site = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
-  const tagUrl = `${site}${normalizeUrl(`/tag/${slug}`)}`;
   
   // Format tag name for display (uppercase)
   const tagNameDisplay = (tag.name || '').replace(/\b\w/g, (l: string) => l.toUpperCase());
   
-  // Structured data
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: tag.name,
-    description: tag.description || `Articles tagged with ${tag.name}`,
-    url: tagUrl,
-    breadcrumb: {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'Home',
-          item: site,
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: 'Tags',
-          item: `${site}${normalizeUrl('/tag')}`,
-        },
-        {
-          '@type': 'ListItem',
-          position: 3,
-          name: tag.name,
-          item: tagUrl,
-        },
-      ],
-    },
-    mainEntity: {
-      '@type': 'ItemList',
-      itemListElement: posts.map((post: any, index: number) => ({
-        '@type': 'ListItem',
-        position: index + 1,
-        url: `${site}${getPostUrl(post)}`,
-      })),
-    },
-  };
+  // Only Yoast schema will be injected via generateMetadata. No static or custom schema here.
   
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      {/* Only Yoast schema will be injected via generateMetadata. */}
       
       <main className="es-tag-page">
       {/* Header Section */}

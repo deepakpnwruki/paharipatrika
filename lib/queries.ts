@@ -103,7 +103,7 @@ export const NODE_BY_URI_QUERY = `
     nodeByUri(uri: $uri) {
       __typename
       uri
-      ... on Post {
+  ... on Post {
         id
         title
         content
@@ -148,8 +148,22 @@ export const NODE_BY_URI_QUERY = `
             slug
           }
         }
+        seo {
+          title
+          metaDesc
+          metaRobotsNoindex
+          metaRobotsNofollow
+          canonical
+          opengraphTitle
+          opengraphDescription
+          opengraphImage { sourceUrl }
+          twitterTitle
+          twitterDescription
+          twitterImage { sourceUrl }
+          schema { raw }
+        }
       }
-      ... on Page {
+  ... on Page {
         id
         title
         content
@@ -162,6 +176,20 @@ export const NODE_BY_URI_QUERY = `
             altText
             mediaDetails { width height }
           }
+        }
+        seo {
+          title
+          metaDesc
+          metaRobotsNoindex
+          metaRobotsNofollow
+          canonical
+          opengraphTitle
+          opengraphDescription
+          opengraphImage { sourceUrl }
+          twitterTitle
+          twitterDescription
+          twitterImage { sourceUrl }
+          schema { raw }
         }
       }
       ... on Category {
@@ -230,6 +258,20 @@ export const POST_BY_SLUG_QUERY = `
           slug
         }
       }
+      seo {
+        title
+        metaDesc
+        metaRobotsNoindex
+        metaRobotsNofollow
+        canonical
+        opengraphTitle
+        opengraphDescription
+        opengraphImage { sourceUrl }
+        twitterTitle
+        twitterDescription
+        twitterImage { sourceUrl }
+        schema { raw }
+      }
     }
   }
 `;
@@ -283,6 +325,20 @@ export const POST_BY_URI_QUERY = `
           slug
         }
       }
+      seo {
+        title
+        metaDesc
+        metaRobotsNoindex
+        metaRobotsNofollow
+        canonical
+        opengraphTitle
+        opengraphDescription
+        opengraphImage { sourceUrl }
+        twitterTitle
+        twitterDescription
+        twitterImage { sourceUrl }
+        schema { raw }
+      }
     }
   }
 `;
@@ -303,6 +359,20 @@ export const PAGE_BY_URI_QUERY = `
           altText
           mediaDetails { width height }
         }
+      }
+      seo {
+        title
+        metaDesc
+        metaRobotsNoindex
+        metaRobotsNofollow
+        canonical
+        opengraphTitle
+        opengraphDescription
+        opengraphImage { sourceUrl }
+        twitterTitle
+        twitterDescription
+        twitterImage { sourceUrl }
+        schema { raw }
       }
     }
   }

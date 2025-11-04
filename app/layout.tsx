@@ -1,5 +1,5 @@
 import './globals.css';
-import type { Metadata, Viewport } from 'next';
+import type { Viewport } from 'next';
 import Script from 'next/script';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -13,66 +13,7 @@ export const viewport: Viewport = {
   themeColor: '#b80000',
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
-  title: {
-    default: `${process.env.SITE_NAME || 'Pahari Patrika'} - ताज़ा खबरें और समाचार`,
-    template: `%s | ${process.env.SITE_NAME || 'Pahari Patrika'}`,
-  },
-  description: 'भारत की ताज़ा खबरें, शिक्षा समाचार, राजनीति, खेल, मनोरंजन और अधिक। हर खबर, हर पल।',
-  keywords: ['news', 'hindi news', 'education news', 'india news', 'breaking news', 'ताज़ा खबरें'],
-  authors: [{ name: process.env.ORGANIZATION_NAME || 'Pahari Patrika Media' }],
-  creator: process.env.ORGANIZATION_NAME || 'Pahari Patrika Media',
-  publisher: process.env.ORGANIZATION_NAME || 'Pahari Patrika Media',
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  verification: {
-    google: process.env.GOOGLE_SITE_VERIFICATION || '',
-  },
-  alternates: {
-    canonical: '/',
-    languages: {
-      'hi-IN': '/',
-    },
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'hi_IN',
-    url: '/',
-    siteName: process.env.SITE_NAME || 'Pahari Patrika',
-    title: `${process.env.SITE_NAME || 'Pahari Patrika'} - ताज़ा खबरें`,
-    description: 'भारत की ताज़ा खबरें और समाचार',
-    images: [
-      {
-        url: '/og-image.svg',
-        width: 1200,
-        height: 630,
-        alt: process.env.SITE_NAME || 'Pahari Patrika',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: `${process.env.SITE_NAME || 'Pahari Patrika'} - ताज़ा खबरें`,
-    description: 'भारत की ताज़ा खबरें और समाचार',
-    creator: '@paharipatrika',
-    images: ['/og-image.svg'],
-  },
-  manifest: '/manifest.webmanifest',
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
-  },
-};
+// Static metadata removed. Only Yoast SEO will be used.
 
 // Add Organization and WebSite structured data
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -89,50 +30,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const logoUrl: string | null = null;
   const siteTitle = 'Pahari Patrika';
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://paharipatrika.in').replace(/\/$/, '');
-  const siteName = process.env.SITE_NAME || process.env.NEXT_PUBLIC_SITE_NAME || 'Pahari Patrika';
-  const orgName = process.env.ORGANIZATION_NAME || 'Pahari Patrika Media';
+  // ...existing code...
 
-  const organizationSchema = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "NewsMediaOrganization",
-    "name": orgName,
-    "url": siteUrl,
-    "logo": {
-      "@type": "ImageObject",
-      "url": `${siteUrl}/logo.png`,
-      "width": 600,
-      "height": 60
-    },
-    "sameAs": [
-      // Add your actual social media URLs here
-      "https://twitter.com/paharipatrika",
-      "https://www.facebook.com/paharipatrika",
-      "https://www.youtube.com/@paharipatrika",
-      "https://www.instagram.com/paharipatrika"
-    ],
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "contactType": "editorial",
-      "availableLanguage": ["Hindi", "English"]
-    }
-  });
-
-  const websiteSchema = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": siteName,
-    "url": siteUrl,
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": `${siteUrl}/search?q={search_term_string}`
-      },
-      "query-input": "required name=search_term_string"
-    },
-    "inLanguage": "hi-IN"
-  });
+  // Static organization and website schema removed. Only Yoast schema will be used.
 
   return (
     <html lang="hi" dir="ltr">
@@ -159,18 +59,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           />
         )}
         {/* Structured Data: Use Script for hydration safety */}
-        <Script
-          id="org-schema"
-          type="application/ld+json"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{ __html: organizationSchema }}
-        />
-        <Script
-          id="website-schema"
-          type="application/ld+json"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{ __html: websiteSchema }}
-        />
+        {/* Static schema removed. Only Yoast schema will be injected by page-level metadata. */}
       </head>
       <body>
         <nav aria-label="Main navigation">

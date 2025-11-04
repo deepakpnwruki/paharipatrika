@@ -1,5 +1,4 @@
 import './article.css';
-import type { Metadata, ResolvingMetadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { wpFetch } from '../../lib/graphql';
@@ -21,29 +20,13 @@ import Link from 'next/link';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import './article.css';
 import { getPostUrl, getCategoryUrl } from '../../lib/url-helpers';
-import { generateSEODescription } from '../../lib/seo-meta';
+// ...existing code...
 
 type ParamPromise = Promise<{ slug?: string[] }>;
 
-export const revalidate = 60; // ISR: 1 minute for breaking news articles
-export const dynamicType = 'force-static'; // Use ISR for better performance
-export const dynamicParams = true; // Allow new articles dynamically
+// Dynamic/static generation disabled
 
-// Pre-generate most recent and popular posts at build time for instant loading
-export async function generateStaticParams() {
-  // Pre-generate last 100 posts for ISR
-  const data = await wpFetch<{ posts?: { nodes?: Array<{ slug: string; uri: string }> } }>(
-    `query RecentPosts {
-      posts(first: 100, where: { orderby: { field: DATE, order: DESC } }) {
-        nodes { slug uri }
-      }
-    }`
-  );
-  const posts = data?.posts?.nodes || [];
-  return posts
-    .filter(p => p && typeof p.slug === 'string')
-    .map(p => ({ slug: p.slug.split('/') }));
-}
+// generateStaticParams disabled
 
 async function resolveNode(segments?: string[]) {
   // Build URI candidates for the given segments
@@ -59,7 +42,7 @@ async function resolveNode(segments?: string[]) {
       const data = await wpFetch<{ nodeByUri: any }>(
         NODE_BY_URI_QUERY,
         { uri },
-        revalidate,
+        undefined,
         `node:${uri}`,
       );
       if (data?.nodeByUri) {
@@ -73,7 +56,7 @@ async function resolveNode(segments?: string[]) {
       const p = await wpFetch<{ post: any }>(
         POST_BY_URI_QUERY,
         { uri },
-        revalidate,
+        undefined,
         `post:${uri}`,
       );
       if (p?.post) return { node: p.post, isPost: true };
@@ -82,7 +65,7 @@ async function resolveNode(segments?: string[]) {
       const pg = await wpFetch<{ page: any }>(
         PAGE_BY_URI_QUERY,
         { uri },
-        revalidate,
+        undefined,
         `page:${uri}`,
       );
       if (pg?.page) return { node: pg.page, isPost: false };
@@ -94,7 +77,7 @@ async function resolveNode(segments?: string[]) {
       const catData = await wpFetch<{ category: any }>(
         CATEGORY_BY_SLUG_QUERY,
         { slug: categorySlug },
-        revalidate,
+        undefined,
         `cat:${categorySlug}`,
       );
       if (catData?.category) return { node: catData.category, isPost: false };
@@ -106,7 +89,7 @@ async function resolveNode(segments?: string[]) {
       const catData = await wpFetch<{ category: any }>(
         CATEGORY_BY_SLUG_QUERY,
         { slug: lastSeg },
-        revalidate,
+        undefined,
         `cat:${lastSeg}`,
       );
       if (catData?.category) return { node: catData.category, isPost: false };
@@ -116,15 +99,10 @@ async function resolveNode(segments?: string[]) {
 }
 
   /* ---------------- metadata ---------------- */
-  function metaFromNode(node: any, site: string, fallbackPath: string) {
-    const canonical = `${site}${node?.uri || fallbackPath}`;
-    const title = node?.title || node?.name || 'Article';
-    const desc = generateSEODescription(
-      (node as any)?.excerpt ?? (node as any)?.description ?? node?.content ?? `${title} - Latest news and updates`
-    );
-    return { canonical, title, desc };
-  }
 
+
+// Use only Yoast SEO fields for metadata
+import type { Metadata, ResolvingMetadata } from 'next';
 export async function generateMetadata(
   { params }: { params: ParamPromise },
   _parent: ResolvingMetadata
@@ -133,26 +111,25 @@ export async function generateMetadata(
   const { node } = await resolveNode(slug);
   if (!node) return { title: 'Not found' };
 
-  const site = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
-  const meta = metaFromNode(node, site, '/' + (slug || []).join('/'));
-
+  // Use Yoast SEO fields only
+  const seo = node.seo || {};
   return {
-    title: meta.title,
-    description: meta.desc,
-    alternates: { canonical: meta.canonical },
+    title: seo.title || node.title || node.name || 'Article',
+    description: seo.metaDesc || '',
+    alternates: { canonical: seo.canonical || '' },
     robots: {
-      index: true, follow: true,
-      googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large', 'max-snippet': -1 },
+      index: seo.metaRobotsNoindex !== 'noindex',
+      follow: seo.metaRobotsNofollow !== 'nofollow',
     },
     openGraph: {
-      title: meta.title,
-      description: meta.desc,
-      url: meta.canonical,
+      title: seo.opengraphTitle || seo.title || node.title || '',
+      description: seo.opengraphDescription || seo.metaDesc || '',
+      url: seo.canonical || '',
       type: node.__typename === 'Post' ? 'article' : 'website',
       locale: 'hi_IN',
       siteName: process.env.SITE_NAME || 'Pahari Patrika',
-      images: node?.featuredImage?.node?.sourceUrl
-        ? [{ url: node.featuredImage.node.sourceUrl, width: 1200, height: 630, alt: node.title || (node as any)?.name }]
+      images: seo.opengraphImage?.sourceUrl
+        ? [{ url: seo.opengraphImage.sourceUrl, width: 1200, height: 630, alt: node.title || node.name }]
         : [],
       publishedTime: (node as any)?.date,
       modifiedTime: (node as any)?.modified,
@@ -160,11 +137,9 @@ export async function generateMetadata(
     },
     twitter: {
       card: 'summary_large_image',
-      title: meta.title,
-      description: meta.desc,
-      images: node?.featuredImage?.node?.sourceUrl
-        ? [node.featuredImage.node.sourceUrl]
-        : [],
+      title: seo.twitterTitle || seo.title || node.title || '',
+      description: seo.twitterDescription || seo.metaDesc || '',
+      images: seo.twitterImage?.sourceUrl ? [seo.twitterImage.sourceUrl] : [],
     },
   };
 }
@@ -251,58 +226,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
       ...(primaryCategory?.slug ? [{ name: primaryCategory.name, href: getCategoryUrl(primaryCategory) }] : [])
     ];
 
-    const imgWidth = (img as any)?.mediaDetails?.width || 1200;
-    const imgHeight = (img as any)?.mediaDetails?.height || 630;
-    // Ensure ISO8601 with timezone for datePublished/dateModified/dateCreated
-    const toIsoWithTZ = (d?: string) => d ? new Date(d).toISOString() : undefined;
-    const schema = JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': node.__typename === 'Post' ? 'NewsArticle' : 'WebPage',
-      headline: node.title,
-  description: generateSEODescription((node?.excerpt ?? node?.content) || ''),
-      image: img?.sourceUrl ? { 
-        '@type': 'ImageObject', 
-        url: img.sourceUrl, 
-        width: imgWidth, 
-        height: imgHeight,
-        caption: (img?.caption || img?.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240) || (img?.altText || '')
-      } : undefined,
-      thumbnailUrl: img?.sourceUrl ? img.sourceUrl : undefined,
-      datePublished: toIsoWithTZ((node as any)?.date),
-      dateModified: toIsoWithTZ((node as any)?.modified),
-      dateCreated: toIsoWithTZ((node as any)?.date),
-  articleBody: (node?.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(),
-      speakable: {
-        '@type': 'SpeakableSpecification',
-        cssSelector: ['.es-title', '.en-content']
-      },
-      author: node?.author?.node?.name ? { 
-        '@type': 'Person', 
-        name: node.author.node.name, 
-        url: `${site}/author/${node?.author?.node?.slug || 'team'}`,
-        description: node.author.node.description || 'संवाददाता',
-        image: node.author.node.avatar?.url ? {
-          '@type': 'ImageObject',
-          url: node.author.node.avatar.url
-        } : undefined
-      } : undefined,
-      publisher: { '@type': 'NewsMediaOrganization', name: process.env.ORGANIZATION_NAME || 'Pahari Patrika Media', logo: { '@type': 'ImageObject', url: `${site}/logo.png`, width: 600, height: 60 } },
-      mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
-      url: canonical,
-      inLanguage: 'hi-IN',
-      articleSection: node?.categories?.nodes?.[0]?.name,
-  keywords: Array.isArray(node?.tags?.nodes) ? node.tags.nodes.map((t: any) => t.name).join(', ') : '',
-  wordCount: typeof node?.content === 'string' ? node.content.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length : 0
-    });
-
-    // Breadcrumb JSON-LD for Article/Page
-    const breadcrumbItems = [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: site },
-      ...(primaryCategory?.slug ? [{ '@type': 'ListItem', position: 2, name: primaryCategory.name, item: `${site}${getCategoryUrl(primaryCategory)}` }] : []),
-    ];
-  const articlePosition = Array.isArray(breadcrumbItems) ? breadcrumbItems.length + 1 : 1;
-    breadcrumbItems.push({ '@type': 'ListItem', position: articlePosition, name: node.title, item: canonical });
-  // const breadcrumbSchema = JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: breadcrumbItems });
+    // All custom schema removed. Only Yoast schema will be injected via generateMetadata.
 
     function wrapTables(content: string): string {
       return content
@@ -385,19 +309,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
 
     return (
       <>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: schema }} />
-        {/* SEO Meta Keywords from tags and Facebook App ID from .env */}
-        <head>
-          {Array.isArray(node?.tags?.nodes) && node.tags.nodes.length > 0 && (
-            <meta
-              name="keywords"
-              content={node.tags.nodes.map((t: any) => t.name).join(', ')}
-            />
-          )}
-          {process.env.NEXT_PUBLIC_FB_APP_ID && (
-            <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FB_APP_ID} />
-          )}
-        </head>
+        {/* Only Yoast schema will be injected via generateMetadata. No static or custom schema here. */}
         <main className="es-page">
           {/* ---------- HERO ---------- */}
           <section className="es-hero">
