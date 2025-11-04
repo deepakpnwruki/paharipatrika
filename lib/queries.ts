@@ -388,6 +388,20 @@ export const CATEGORY_BY_SLUG_QUERY = `
       slug
       uri
       count
+      seo {
+        title
+        metaDesc
+        metaRobotsNoindex
+        metaRobotsNofollow
+        canonical
+        opengraphTitle
+        opengraphDescription
+        opengraphImage { sourceUrl }
+        twitterTitle
+        twitterDescription
+        twitterImage { sourceUrl }
+        schema { raw }
+      }
       posts(first: $first, after: $after) {
         pageInfo {
           hasNextPage

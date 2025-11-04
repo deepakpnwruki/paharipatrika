@@ -64,7 +64,7 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
       // Performance logging
       if (ENABLE_PERF_LOGS) {
         const status = totalDuration > 1000 ? '🐌' : totalDuration > 500 ? '⚠️' : '✅';
-        console.log(`${status} [${queryName}] ${totalDuration}ms (fetch: ${fetchDuration}ms, attempt: ${attempt + 1})`);
+  // ...existing code...
       }
 
       if (json.errors) {

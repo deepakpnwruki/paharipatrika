@@ -43,27 +43,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 			return { title: 'Category not found' };
 		}
 		const category = data.category;
-		const siteName = process.env.SITE_NAME || 'EduNews';
-		const siteUrl = (process.env.SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
-		const description = category.description || `${category.name} की ताज़ा खबरें, समाचार और अपडेट्स - ${siteName}`;
+		const seo = category.seo || {};
 		return {
-			title: `${category.name} समाचार | ${siteName}`,
-			description,
-			alternates: {
-				canonical: `${siteUrl}${category.uri}`,
+			title: seo.title || category.name || 'Category',
+			description: seo.metaDesc || category.description || '',
+			alternates: { canonical: seo.canonical || '' },
+			robots: {
+				index: seo.metaRobotsNoindex !== 'noindex',
+				follow: seo.metaRobotsNofollow !== 'nofollow',
 			},
 			openGraph: {
-				title: `${category.name} - Latest News & Updates`,
-				description,
-				url: `${siteUrl}${category.uri}`,
+				title: seo.opengraphTitle || seo.title || category.name || '',
+				description: seo.opengraphDescription || seo.metaDesc || category.description || '',
+				url: seo.canonical || '',
 				type: 'website',
-				siteName,
 				locale: 'hi_IN',
+				siteName: process.env.SITE_NAME || 'Pahari Patrika',
+				images: seo.opengraphImage?.sourceUrl
+					? [{ url: seo.opengraphImage.sourceUrl, width: 1200, height: 630, alt: category.name }]
+					: [],
 			},
 			twitter: {
 				card: 'summary_large_image',
-				title: `${category.name} समाचार`,
-				description,
+				title: seo.twitterTitle || seo.title || category.name || '',
+				description: seo.twitterDescription || seo.metaDesc || category.description || '',
+				images: seo.twitterImage?.sourceUrl ? [seo.twitterImage.sourceUrl] : [],
 			},
 		};
 	} catch {
@@ -111,54 +115,30 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 	const _firstPost = posts[0];
 	const _morePosts = posts.slice(1);
 
-	const structuredData = JSON.stringify({
-		"@context": "https://schema.org",
-		"@type": "CollectionPage",
-		"name": category.name,
-		"description": category.description || `${category.name} समाचार`,
-		"url": `${siteUrl}${category.uri}`,
-		"breadcrumb": {
-			"@type": "BreadcrumbList",
-			"itemListElement": [
-				{
-					"@type": "ListItem",
-					"position": 1,
-					"name": "होम",
-					"item": siteUrl
-				},
-				{
-					"@type": "ListItem",
-					"position": 2,
-					"name": category.name,
-					"item": `${siteUrl}${category.uri}`
-				}
-			]
-		},
-		"mainEntity": {
-			"@type": "ItemList",
-			"itemListElement": posts.map((post: any, index: number) => ({
-				"@type": "ListItem",
-				"position": index + 1,
-				"url": `${siteUrl}${post.uri || '/' + post.slug}`
-			}))
+
+		// Only inject Yoast schema if present
+		let yoastSchema = '';
+		if (category.seo?.schema?.raw) {
+			yoastSchema = category.seo.schema.raw;
 		}
-	});
 
 	const canonicalUrl = page === 1 ? `${siteUrl}${category.uri}` : `${siteUrl}${category.uri}?page=${page}`;
 	const prevUrl = page > 1 ? (page === 2 ? `${siteUrl}${category.uri}` : `${siteUrl}${category.uri}?page=${page - 1}`) : null;
 	const nextUrl = page < totalPages ? `${siteUrl}${category.uri}?page=${page + 1}` : null;
 
-	return (
-		<>
-			<link rel="canonical" href={canonicalUrl} />
-			{prevUrl && <link rel="prev" href={prevUrl} />}
-			{nextUrl && <link rel="next" href={nextUrl} />}
-			<script
-				type="application/ld+json"
-				dangerouslySetInnerHTML={{ __html: structuredData }}
-			/>
-      
-			<main className="category-page">
+		return (
+			<>
+				<link rel="canonical" href={canonicalUrl} />
+				{prevUrl && <link rel="prev" href={prevUrl} />}
+				{nextUrl && <link rel="next" href={nextUrl} />}
+				{/* Inject Yoast schema only if present */}
+				{yoastSchema && (
+					<script
+						type="application/ld+json"
+						dangerouslySetInnerHTML={{ __html: yoastSchema }}
+					/>
+				)}
+				<main className="category-page">
 				<div className="category-container">
 					{/* Breadcrumb */}
 					<nav className="cat-breadcrumb" aria-label="breadcrumb">

@@ -31,7 +31,7 @@ async function resolveNode(segments?: string[]) {
   // Build URI candidates for the given segments
   const cs: string[] = [];
   if (!segments) {
-    console.log('[resolveNode] No segments provided');
+	// ...existing code...
     return { node: null, isPost: false };
   }
   const uri = '/' + segments.join('/');
@@ -49,11 +49,11 @@ async function resolveNode(segments?: string[]) {
       );
       if (data?.nodeByUri) {
         const n = data.nodeByUri;
-        console.log(`[resolveNode] nodeByUri hit for uri: ${uri}, typename: ${n.__typename}`);
+		// ...existing code...
         return { node: n, isPost: n.__typename === 'Post' };
       }
     } catch (e) {
-      console.log(`[resolveNode] nodeByUri error for uri: ${uri}`, e);
+		// ...existing code...
     }
   }
   for (const uri of cs) {
@@ -65,11 +65,11 @@ async function resolveNode(segments?: string[]) {
         `post:${uri}`,
       );
       if (p?.post) {
-        console.log(`[resolveNode] post hit for uri: ${uri}`);
+		// ...existing code...
         return { node: p.post, isPost: true };
       }
     } catch (e) {
-      console.log(`[resolveNode] post error for uri: ${uri}`, e);
+		// ...existing code...
     }
     try {
       const pg = await wpFetch<{ page: any }>(
@@ -79,11 +79,11 @@ async function resolveNode(segments?: string[]) {
         `page:${uri}`,
       );
       if (pg?.page) {
-        console.log(`[resolveNode] page hit for uri: ${uri}`);
+		// ...existing code...
         return { node: pg.page, isPost: false };
       }
     } catch (e) {
-      console.log(`[resolveNode] page error for uri: ${uri}`, e);
+		// ...existing code...
     }
   }
   if (Array.isArray(segments) && segments.length >= 2 && segments[0] === 'category') {
@@ -96,13 +96,13 @@ async function resolveNode(segments?: string[]) {
         `cat:${categorySlug}`,
       );
       if (catData?.category) {
-        console.log(`[resolveNode] category hit for slug: ${categorySlug}`);
+		// ...existing code...
         return { node: catData.category, isPost: false };
       } else {
-        console.log(`[resolveNode] category miss for slug: ${categorySlug}`);
+		// ...existing code...
       }
     } catch (e) {
-      console.log(`[resolveNode] category error for slug: ${categorySlug}`, e);
+		// ...existing code...
     }
   }
   if (Array.isArray(segments) && segments.length) {
@@ -115,16 +115,16 @@ async function resolveNode(segments?: string[]) {
         `cat:${lastSeg}`,
       );
       if (catData?.category) {
-        console.log(`[resolveNode] fallback category hit for slug: ${lastSeg}`);
+		// ...existing code...
         return { node: catData.category, isPost: false };
       } else {
-        console.log(`[resolveNode] fallback category miss for slug: ${lastSeg}`);
+		// ...existing code...
       }
     } catch (e) {
-      console.log(`[resolveNode] fallback category error for slug: ${lastSeg}`, e);
+		// ...existing code...
     }
   }
-  console.log('[resolveNode] No node found for segments:', segments);
+	// ...existing code...
   return { node: null, isPost: false };
 }
 
@@ -177,14 +177,14 @@ export async function generateMetadata(
 /* ---------------- page ---------------- */
 export default async function NodePage({ params }: { params: ParamPromise }) {
     const { slug } = await params;
-    console.log('[NodePage] params.slug:', slug);
+	// ...existing code...
     // Visible debug message for slug
     if (!slug || !Array.isArray(slug) || slug.length === 0) {
       return <div style={{color:'red',fontWeight:'bold'}}>DEBUG: No slug found in params</div>;
     }
     const { node } = await resolveNode(slug);
     if (!node) {
-      console.log('[NodePage] notFound for slug:', slug);
+	// ...existing code...
       return <div style={{color:'red',fontWeight:'bold'}}>DEBUG: No node found for slug: {JSON.stringify(slug)}</div>;
     }
     // Calculate reading length (word count) for meta only (not UI)
