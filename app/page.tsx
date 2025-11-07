@@ -10,7 +10,7 @@ import { getPostUrl } from '../lib/url-helpers';
 
 const HOMEPAGE_POSTS_QUERY = `
   query HomepagePosts {
-    posts(first: 12, where: { orderby: { field: DATE, order: DESC } }) {
+    posts(first: 20, where: { orderby: { field: DATE, order: DESC } }) {
       nodes {
         title
         slug
@@ -32,34 +32,6 @@ const HOMEPAGE_POSTS_QUERY = `
           node {
             name
             slug
-          }
-        }
-      }
-    }
-    latestPosts: posts(first: 5, where: { orderby: { field: DATE, order: DESC } }) {
-      nodes {
-        title
-        slug
-        uri
-        date
-        featuredImage {
-          node {
-            sourceUrl
-            altText
-          }
-        }
-      }
-    }
-    trendingPosts: posts(first: 5, where: { orderby: { field: COMMENT_COUNT, order: DESC } }) {
-      nodes {
-        title
-        slug
-        uri
-        date
-        featuredImage {
-          node {
-            sourceUrl
-            altText
           }
         }
       }
@@ -116,14 +88,10 @@ function timeAgo(dateString?: string) {
 
 export default async function Home() {
   let posts: PostNode[] = [];
-  let latestPosts: PostNode[] = [];
-  let trendingPosts: PostNode[] = [];
   
   try {
     const data = await wpFetch<{ 
       posts: { nodes: PostNode[] };
-      latestPosts: { nodes: PostNode[] };
-      trendingPosts: { nodes: PostNode[] };
     }>(
       HOMEPAGE_POSTS_QUERY,
       {},
@@ -131,23 +99,19 @@ export default async function Home() {
       'homepage-posts'
     );
     posts = data?.posts?.nodes || [];
-    latestPosts = data?.latestPosts?.nodes || [];
-    trendingPosts = data?.trendingPosts?.nodes || [];
   } catch (error) {
-    console.error('Error fetching homepage posts:', error);
+    // Silently handle error, use empty posts array
     posts = [];
-    latestPosts = [];
-    trendingPosts = [];
   }
 
   const featured = posts[0];
   const secondaryPosts = posts.slice(1, 4);
-  const listPosts = posts.slice(4, 24);
+  const listPosts = posts.slice(4, 20);
 
   return (
     <main className="homepage">
       <div className="container">
-        <div className="homepage-layout">
+        <div className="homepage-layout-no-sidebar">
           {/* Featured Stories Only */}
           <div className="featured-column">
             {/* Large Featured Card - Side by Side Layout */}
@@ -233,7 +197,7 @@ export default async function Home() {
               ))}
             </div>
 
-            {/* Article List for Mobile */}
+            {/* Article List for Mobile and Desktop */}
             <div className="article-list">
               {listPosts.map((post) => (
                 <Link 
@@ -271,51 +235,6 @@ export default async function Home() {
               ))}
             </div>
           </div>
-
-          {/* Sidebar */}
-          <aside className="homepage-sidebar">
-            {/* Latest Updates */}
-            <div className="sidebar-section">
-              <h3 className="sidebar-title">Latest Updates</h3>
-              <div className="sidebar-posts">
-                {latestPosts.map((post, index) => (
-                  <Link 
-                    key={post.slug} 
-                    href={getPostUrl(post)}
-                    className="sidebar-post"
-                    prefetch={false}
-                  >
-                    <div className="sidebar-post-number">{index + 1}</div>
-                    <div className="sidebar-post-content">
-                      <h4 className="sidebar-post-title">{post.title}</h4>
-                      <span className="sidebar-post-time">{timeAgo(post.date)}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Trending */}
-            <div className="sidebar-section">
-              <h3 className="sidebar-title">Trending</h3>
-              <div className="sidebar-posts">
-                {trendingPosts.map((post, index) => (
-                  <Link 
-                    key={post.slug} 
-                    href={getPostUrl(post)}
-                    className="sidebar-post"
-                    prefetch={false}
-                  >
-                    <div className="sidebar-post-number trending">{index + 1}</div>
-                    <div className="sidebar-post-content">
-                      <h4 className="sidebar-post-title">{post.title}</h4>
-                      <span className="sidebar-post-time">{timeAgo(post.date)}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </aside>
         </div>
       </div>
     </main>

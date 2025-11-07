@@ -6,32 +6,66 @@ import {
   PAGE_BY_URI_QUERY,
   POST_BY_URI_QUERY,
   CATEGORY_BY_SLUG_QUERY,
-  RELATED_POSTS_QUERY,
 } from '../../lib/queries';
 import ShareButtonsClient from './ShareButtonsClient';
 import ImageCaption from '../../components/ImageCaption';
 import InArticleAd from '../../components/InArticleAd';
+import MgidNativeAd from '../../components/MgidNativeAd';
 import ArticleContentWithAds from '../../components/ArticleContentWithAds';
 import SocialEmbeds from '../../components/SocialEmbeds';
 import EmbedProcessor from '../../components/EmbedProcessor';
-import PostCard from '../../components/PostCard';
 import Link from 'next/link';
 import Breadcrumbs from '../../components/Breadcrumbs';
-import './article.css';
 import { getPostUrl, getCategoryUrl } from '../../lib/url-helpers';
+import { 
+  processArticleContent, 
+  generateOptimizedBreadcrumbs, 
+  formatOptimizedDate 
+} from '../../lib/content-optimization';
 // ...existing code...
 
 type ParamPromise = Promise<{ slug?: string[] }>;
 
-// Dynamic/static generation disabled
+// ISR Configuration for optimal performance
+export const revalidate = 900; // 15 minutes - articles don't change often after publishing
+export const dynamic = 'force-static'; // Use ISR for better performance
+export const dynamicParams = true; // Allow new articles to be generated
 
-// generateStaticParams disabled
+// Pre-generate most popular articles at build time
+export async function generateStaticParams() {
+  try {
+    // Get 50 most recent articles for pre-generation
+    const data = await wpFetch<{ posts: { nodes: Array<{ slug: string, uri: string }> } }>(
+      `query RecentPostsForPreGeneration {
+        posts(first: 50, where: { orderby: { field: DATE, order: DESC } }) {
+          nodes {
+            slug
+            uri
+          }
+        }
+      }`,
+      {},
+      3600, // Cache for 1 hour during build
+      'build-articles'
+    );
+
+    return data?.posts?.nodes?.map((post) => {
+      // Remove leading/trailing slashes and split by /
+      const cleanUri = post.uri?.replace(/^\/+|\/+$/g, '') || post.slug;
+      return {
+        slug: cleanUri.split('/'),
+      };
+    }).filter(Boolean) || [];
+  } catch (error) {
+    // Silently handle error, return empty array
+    return [];
+  }
+}
 
 async function resolveNode(segments?: string[]) {
   // Build URI candidates for the given segments
   const cs: string[] = [];
   if (!segments) {
-	// ...existing code...
     return { node: null, isPost: false };
   }
   const uri = '/' + segments.join('/');
@@ -39,92 +73,90 @@ async function resolveNode(segments?: string[]) {
   if (!uri.endsWith('/')) cs.push(uri + '/');
   if (uri.endsWith('/')) cs.push(uri.slice(0, -1));
 
+  // Try NODE_BY_URI first with better caching
   for (const uri of cs) {
     try {
       const data = await wpFetch<{ nodeByUri: any }>(
         NODE_BY_URI_QUERY,
         { uri },
-        undefined,
+        revalidate, // Use the same revalidate time as page
         `node:${uri}`,
       );
       if (data?.nodeByUri) {
         const n = data.nodeByUri;
-		// ...existing code...
         return { node: n, isPost: n.__typename === 'Post' };
       }
-    } catch (e) {
-		// ...existing code...
+    } catch (_e) {
+      // Continue to next URI variation
     }
   }
+  
+  // Fallback: try specific post/page queries with optimized caching
   for (const uri of cs) {
     try {
       const p = await wpFetch<{ post: any }>(
         POST_BY_URI_QUERY,
         { uri },
-        undefined,
+        revalidate,
         `post:${uri}`,
       );
       if (p?.post) {
-		// ...existing code...
         return { node: p.post, isPost: true };
       }
-    } catch (e) {
-		// ...existing code...
+    } catch (_e) {
+      // Continue
     }
     try {
       const pg = await wpFetch<{ page: any }>(
         PAGE_BY_URI_QUERY,
         { uri },
-        undefined,
+        revalidate,
         `page:${uri}`,
       );
       if (pg?.page) {
-		// ...existing code...
         return { node: pg.page, isPost: false };
       }
-    } catch (e) {
-		// ...existing code...
+    } catch (_e) {
+      // Continue
     }
   }
+  
+  // Special case: category URLs
   if (Array.isArray(segments) && segments.length >= 2 && segments[0] === 'category') {
     const categorySlug = segments[1];
     try {
       const catData = await wpFetch<{ category: any }>(
         CATEGORY_BY_SLUG_QUERY,
         { slug: categorySlug },
-        undefined,
+        revalidate,
         `cat:${categorySlug}`,
       );
       if (catData?.category) {
-		// ...existing code...
         return { node: catData.category, isPost: false };
-      } else {
-		// ...existing code...
       }
-    } catch (e) {
-		// ...existing code...
+    } catch (_e) {
+      // Continue
     }
   }
-  if (Array.isArray(segments) && segments.length) {
-    const lastSeg = segments.length > 0 ? segments[segments.length - 1] : '';
+
+  // Last fallback: try to match any category by the last segment
+  if (Array.isArray(segments) && segments.length > 0) {
+    const lastSeg = segments[segments.length - 1];
     try {
       const catData = await wpFetch<{ category: any }>(
         CATEGORY_BY_SLUG_QUERY,
         { slug: lastSeg },
-        undefined,
-        `cat:${lastSeg}`,
+        revalidate,
+        `cat-fallback:${lastSeg}`,
       );
       if (catData?.category) {
-		// ...existing code...
         return { node: catData.category, isPost: false };
-      } else {
-		// ...existing code...
       }
-    } catch (e) {
-		// ...existing code...
+    } catch (_e) {
+      // Final fallback failed
     }
   }
-	// ...existing code...
+
   return { node: null, isPost: false };
 }
 
@@ -177,15 +209,13 @@ export async function generateMetadata(
 /* ---------------- page ---------------- */
 export default async function NodePage({ params }: { params: ParamPromise }) {
     const { slug } = await params;
-	// ...existing code...
-    // Visible debug message for slug
+    
     if (!slug || !Array.isArray(slug) || slug.length === 0) {
-      return <div style={{color:'red',fontWeight:'bold'}}>DEBUG: No slug found in params</div>;
+      return <div>Page not found</div>;
     }
     const { node } = await resolveNode(slug);
     if (!node) {
-	// ...existing code...
-      return <div style={{color:'red',fontWeight:'bold'}}>DEBUG: No node found for slug: {JSON.stringify(slug)}</div>;
+      return <div>Content not found</div>;
     }
     // Calculate reading length (word count) for meta only (not UI)
     // const wordCount = typeof node?.content === 'string'
@@ -205,12 +235,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
 
             <section className="es-container es-grid es-grid--cards" aria-label={`Posts in ${node.name}`}>
               {posts.length === 0 && (
-                <>
-                  <div style={{color:'red',fontWeight:'bold'}}>No posts found for this category.</div>
-                  <pre style={{background:'#222',color:'#fff',padding:'1em',overflow:'auto',fontSize:'12px'}}>
-                    {`DEBUG posts:\n${JSON.stringify(posts, null, 2)}`}
-                  </pre>
-                </>
+                <div>No posts found for this category.</div>
               )}
               {posts.map((p: any) => (
                 <Link href={getPostUrl(p)} key={p.slug} className="es-card" prefetch={false}>
@@ -239,84 +264,24 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
         );
       }
 
-    // Related posts by category/tag (using IDs)
-    let relatedPosts: any[] = [];
-    if (node.__typename === 'Post') {
-      const categoryIds = Array.isArray(node.categories?.nodes)
-        ? node.categories.nodes.map((c: any) => c.id).filter(Boolean)
-        : [];
-      const tagIds = Array.isArray(node.tags?.nodes)
-        ? node.tags.nodes.map((t: any) => t.id).filter(Boolean)
-        : [];
-      const excludeIds = node.id ? [node.id] : [];
-      try {
-        const relatedData = await wpFetch<{ posts: { nodes: any[] } }>(
-          RELATED_POSTS_QUERY,
-          {
-            categoryIds,
-            tagIds,
-            excludeIds,
-          },
-          60,
-          `related:${node.slug}`
-        );
-        relatedPosts = relatedData?.posts?.nodes || [];
-      } catch {
-        relatedPosts = [];
-      }
-    }
+    // Related posts section removed to reduce API load
+    // let relatedPosts: any[] = [];
 
     const img = node?.featuredImage?.node || null;
     const site = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
     const canonical = `${site}${node?.uri || '/' + (slug || []).join('/')}`;
 
-    const primaryCategory = node?.categories?.nodes?.[0];
-    const breadcrumbs = [
-      { name: 'Home', href: '/' },
-      ...(primaryCategory?.slug ? [{ name: primaryCategory.name, href: getCategoryUrl(primaryCategory) }] : [])
-    ];
+    // Use optimized breadcrumb generation
+    const breadcrumbs = generateOptimizedBreadcrumbs(node);
 
     // All custom schema removed. Only Yoast schema will be injected via generateMetadata.
 
-    function wrapTables(content: string): string {
-      return content
-        .replace(/<table([^>]*)>/gi, '<div class="table-wrapper"><table$1>')
-        .replace(/<\/table>/gi, '</table></div>');
-    }
-    
-    // Function to insert ads every 2 paragraphs
-    function insertAdsInContent(content: string): string {
-      // Split content by paragraphs
-      const paragraphs = content.split(/<\/p>/gi);
-      let result = '';
-      let paragraphCount = 0;
-      
-  for (let i = 0; i < (Array.isArray(paragraphs) ? paragraphs.length : 0); i++) {
-        // Add the paragraph back
-        if (paragraphs[i].trim()) {
-          result += paragraphs[i] + '</p>';
-          
-          // Check if this is a valid paragraph (not just whitespace or inside other tags)
-          if (paragraphs[i].includes('<p')) {
-            paragraphCount++;
-            
-            // Insert ad after every 2 paragraphs
-            if (paragraphCount % 2 === 0 && i < (Array.isArray(paragraphs) ? paragraphs.length - 1 : 0)) {
-              result += `<div class="article-ad-slot" data-ad-position="${Math.floor(paragraphCount / 2)}"></div>`;
-            }
-          }
-        }
-      }
-      
-      return result;
-    }
-    
-    const processedContent = node.content ? insertAdsInContent(wrapTables(node.content)) : '';
+    // Use optimized content processing
+    const processedContent = node.content ? processArticleContent(node.content) : '';
 
-    const dt = new Date((node as any)?.date || Date.now());
-    const tz = 'Asia/Kolkata';
-    const datePart = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: tz }).format(dt);
-    const timePart = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz }).format(dt);
+    // Use optimized date formatting  
+    const { formatted: datePart, iso: dateIso, datetime: dt } = formatOptimizedDate((node as any)?.date);
+    const timePart = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }).format(dt);
     const mobDateStr = `${datePart} | ${timePart} IST`;
 
     // author socials (best-effort)
@@ -340,12 +305,12 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
       authorNode?.userMeta?.twitter ||
       (typeof authorUrl === 'string' && (authorUrl.includes('twitter.com') || authorUrl.includes('x.com')) ? authorUrl : undefined);
 
-    // related buckets
-  const _sanitizedRelated = Array.isArray(relatedPosts) ? relatedPosts.filter((p: any) => p && p.slug !== node.slug) : [];
-  // const latestItems = sanitizedRelated.slice(0, 4);
-  // const trendingItems = sanitizedRelated.slice(4, 8);
-  // const bottomItems = sanitizedRelated.slice(8, 12);
-  // const relatedItems = Array.isArray(bottomItems) && bottomItems.length > 0 ? bottomItems : (Array.isArray(sanitizedRelated) ? sanitizedRelated.slice(0, 4) : []);
+    // Related posts sections removed to reduce API load
+    // const _sanitizedRelated = [];
+    // const latestItems = [];
+    // const trendingItems = [];
+    // const bottomItems = [];
+    // const relatedItems = [];
 
     // small image picker
   // function pickThumb(imgNode?: any): { url?: string; width?: number; height?: number } {
@@ -521,51 +486,16 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
                 />
               </div>
 
-              {/* Ad after Share Section - 300x50 */}
-              <InArticleAd 
-                slot={process.env.NEXT_PUBLIC_ADSENSE_AFTER_SHARE_SLOT || ''} 
-                size="300x50"
-                className="after-share-ad"
-              />
+              {/* Related Articles section removed to reduce API load */}
 
-              {/* Related Topics Tags */}
-              {/* Related topics/tags feature removed as per request */}
-
-
-              {/* Related Articles */}
-              {Array.isArray(relatedPosts) && relatedPosts.length > 0 && (
-                <section className="es-related-articles">
-                  <h3 className="es-related-articles__title">Posts On Related Topics</h3>
-                  {Array.isArray(node?.tags?.nodes) && node.tags.nodes.length > 0 && (
-                    <div className="es-article-tags-nav-outer">
-                      <nav className="es-article-tags-nav" aria-label="Article tags">
-                        <ul className="es-article-tags-nav__list">
-                          {node.tags.nodes.map((tag: any) => (
-                            <li key={tag.slug} className="es-article-tags-nav__item">
-                              <a href={`/tag/${tag.slug}`} className="es-article-tags-nav__link">{tag.name}</a>
-                            </li>
-                          ))}
-                        </ul>
-                      </nav>
-                    </div>
-                  )}
-                  <div className="es-related-articles__list">
-                    {relatedPosts.map((post: any) => (
-                      <PostCard key={post.slug} post={post} />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Ad after Related Articles - 300x250 */}
-              <InArticleAd 
-                slot={process.env.NEXT_PUBLIC_ADSENSE_AFTER_RELATED_SLOT || ''} 
-                size="300x250"
-                className="after-related-ad"
+              {/* MGID Native Ad after Related Articles - Lazy Loaded - Mobile & Desktop */}
+              <MgidNativeAd 
+                widgetId="1520454"
+                className="after-related-mgid-ad"
+                lazy={true}
               />
 
               {/* Tags */}
-
 
               {/* Share row */}
               <div className="es-share es-share--row">
@@ -576,11 +506,25 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
               {/* Related section removed as per request */}
             </article>
 
-            {/* RIGHT: sidebar */}
+            {/* RIGHT: Sidebar - Desktop Only */}
             <aside className="es-sidebar">
-              {/* Latest updates panel removed as per request */}
+              {/* AdSense Ad after Share Section - 300x50 - Desktop Only */}
+              <div className="es-sidebar-section">
+                <InArticleAd 
+                  slot={process.env.NEXT_PUBLIC_ADSENSE_AFTER_SHARE_SLOT || ''} 
+                  size="300x250"
+                  className="sidebar-after-share-ad"
+                />
+              </div>
 
-              {/* Trending stories panel removed as per request */}
+              {/* Additional Sidebar AdSense Ad */}
+              <div className="es-sidebar-section">
+                <InArticleAd 
+                  slot={process.env.NEXT_PUBLIC_ADSENSE_SIDEBAR_SLOT || process.env.NEXT_PUBLIC_ADSENSE_AFTER_SHARE_SLOT || ''} 
+                  size="300x250"
+                  className="sidebar-main-ad"
+                />
+              </div>
             </aside>
           </div>
         </main>

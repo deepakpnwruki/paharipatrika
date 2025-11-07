@@ -2,7 +2,7 @@ import './globals.css';
 import type { Viewport } from 'next';
 import Script from 'next/script';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
+import FooterStatic from '../components/FooterStatic';
 import { wpFetch } from '../lib/graphql';
 import { CATEGORIES_QUERY } from '../lib/queries';
 
@@ -17,11 +17,11 @@ export const viewport: Viewport = {
 
 // Add Organization and WebSite structured data
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const revalidateSeconds = Number(process.env.REVALIDATE_SECONDS ?? 300);
+  const revalidateSeconds = Number(process.env.REVALIDATE_SECONDS ?? 900); // Increased to 15 minutes
 
   const catsData = await wpFetch<{ categories:{ nodes:{ name:string; slug:string }[] } }>(
     CATEGORIES_QUERY, 
-    { first: 20 }, 
+    { first: 8 }, // Reduced from 20 to 8 categories 
     revalidateSeconds, 
     'layout-cats'
   );
@@ -48,6 +48,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://cms.paharipatrika.in" crossOrigin="" />
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="" />
+        {/* MGID DNS prefetch for better performance */}
+        <link rel="dns-prefetch" href="https://jsc.mgid.com" />
+        <link rel="preconnect" href="https://servicer.mgid.com" />
         <meta name="format-detection" content="telephone=no" />
         {/* Google AdSense */}
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID && (
@@ -58,6 +61,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             strategy="afterInteractive"
           />
         )}
+        {/* MGID Native Ads Script */}
+        <Script
+          src="https://jsc.mgid.com/site/676618.js"
+          strategy="lazyOnload"
+          async
+        />
         {/* Structured Data: Use Script for hydration safety */}
         {/* Static schema removed. Only Yoast schema will be injected by page-level metadata. */}
       </head>
@@ -69,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
         </main>
         <footer role="contentinfo">
-          <Footer />
+          <FooterStatic />
         </footer>
         {/* Google Analytics 4 (GA4) */}
         {process.env.NEXT_PUBLIC_GA_ID && (

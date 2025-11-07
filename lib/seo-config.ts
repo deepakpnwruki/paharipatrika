@@ -8,17 +8,17 @@
 export const SEO_CONFIG = {
   // Homepage - High traffic, needs frequent updates
   homepage: {
-    revalidate: 180, // 3 minutes
+    revalidate: 300, // 5 minutes (was 3 minutes)
     dynamic: 'force-static' as const,
-    reason: 'Homepage gets most traffic and needs fresh content for returning visitors',
+    reason: 'Homepage gets most traffic but 5 minutes is sufficient for news updates',
   },
 
   // Article/Post Pages - Breaking news, most important for SEO
   articles: {
-    revalidate: 60, // 1 minute
+    revalidate: 300, // 5 minutes (was 1 minute)
     dynamic: 'force-static' as const,
     preGenerate: 100, // Pre-generate 100 most recent posts
-    reason: 'Articles are time-sensitive content that needs quick updates',
+    reason: 'Most articles are evergreen after publishing, 5 minutes is sufficient',
   },
 
   // Category Pages - Semi-dynamic, updated when new posts published

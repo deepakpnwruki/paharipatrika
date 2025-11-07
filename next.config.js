@@ -7,11 +7,30 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // Performance optimizations
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   // Enable experimental features for better performance
   experimental: {
     optimizePackageImports: ['react', 'react-dom'],
   },
+  // Compiler optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  // Bundle analyzer (enable only when needed)
+  ...(process.env.ANALYZE === 'true' && {
+    webpack: (config) => {
+      config.plugins.push(
+        new (require('@next/bundle-analyzer')({
+          enabled: true,
+        }))()
+      );
+      return config;
+    },
+  }),
   async headers() {
     const isProd = process.env.NODE_ENV === 'production';
     const csp = [
@@ -39,7 +58,9 @@ const nextConfig = {
       { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
       // Performance headers
       { key: 'X-DNS-Prefetch-Control', value: 'on' },
-      { key: 'Cache-Control', value: 'public, max-age=300, stale-while-revalidate=600' }
+      { key: 'Cache-Control', value: 'public, max-age=31536000, stale-while-revalidate=86400' }, // Aggressive caching
+      { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+      { key: 'X-XSS-Protection', value: '1; mode=block' },
     ];
 
     return [

@@ -25,6 +25,15 @@
   }
 }
 
+/* Homepage Layout without Sidebar - Full Width */
+.homepage-layout-no-sidebar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 /* Featured Column - Full Width */
 .featured-column {
   display: flex;
@@ -315,13 +324,14 @@
 .category-badge.golf { background: #10b981; }
 .category-badge.nba { background: #dc2626; }
 
-/* Article List - Hidden on Desktop, Shown on Mobile */
+/* Article List - Now shown on both Desktop and Mobile */
 .article-list {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 0;
   width: 100%;
   border-top: 1px solid #222;
+  margin-top: 1rem;
 }
 
 .article-item {
@@ -483,12 +493,6 @@
     padding: 5px 12px;
     top: 12px;
     left: 12px;
-  }
-  
-  /* Show article list on mobile */
-  .article-list {
-    display: flex;
-    margin-top: 1rem;
   }
 }
 
