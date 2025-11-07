@@ -16,7 +16,7 @@ import SocialEmbeds from '../../components/SocialEmbeds';
 import EmbedProcessor from '../../components/EmbedProcessor';
 import Link from 'next/link';
 import Breadcrumbs from '../../components/Breadcrumbs';
-import { getPostUrl, getCategoryUrl } from '../../lib/url-helpers';
+import { getPostUrl } from '../../lib/url-helpers';
 import { 
   processArticleContent, 
   generateOptimizedBreadcrumbs, 
@@ -56,7 +56,7 @@ export async function generateStaticParams() {
         slug: cleanUri.split('/'),
       };
     }).filter(Boolean) || [];
-  } catch (error) {
+  } catch {
     // Silently handle error, return empty array
     return [];
   }
@@ -86,7 +86,7 @@ async function resolveNode(segments?: string[]) {
         const n = data.nodeByUri;
         return { node: n, isPost: n.__typename === 'Post' };
       }
-    } catch (_e) {
+    } catch {
       // Continue to next URI variation
     }
   }
@@ -103,7 +103,7 @@ async function resolveNode(segments?: string[]) {
       if (p?.post) {
         return { node: p.post, isPost: true };
       }
-    } catch (_e) {
+    } catch {
       // Continue
     }
     try {
@@ -116,7 +116,7 @@ async function resolveNode(segments?: string[]) {
       if (pg?.page) {
         return { node: pg.page, isPost: false };
       }
-    } catch (_e) {
+    } catch {
       // Continue
     }
   }
@@ -134,7 +134,7 @@ async function resolveNode(segments?: string[]) {
       if (catData?.category) {
         return { node: catData.category, isPost: false };
       }
-    } catch (_e) {
+    } catch {
       // Continue
     }
   }
@@ -152,7 +152,7 @@ async function resolveNode(segments?: string[]) {
       if (catData?.category) {
         return { node: catData.category, isPost: false };
       }
-    } catch (_e) {
+    } catch {
       // Final fallback failed
     }
   }
@@ -280,7 +280,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
     const processedContent = node.content ? processArticleContent(node.content) : '';
 
     // Use optimized date formatting  
-    const { formatted: datePart, iso: dateIso, datetime: dt } = formatOptimizedDate((node as any)?.date);
+  const { formatted: datePart, datetime: dt } = formatOptimizedDate((node as any)?.date);
     const timePart = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }).format(dt);
     const mobDateStr = `${datePart} | ${timePart} IST`;
 

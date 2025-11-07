@@ -59,11 +59,11 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
       }
 
       const json = await res.json();
-      const totalDuration = Date.now() - totalStartTime;
+  // totalDuration removed as it was unused
 
       // Performance logging
       if (ENABLE_PERF_LOGS) {
-        const status = totalDuration > 1000 ? '🐌' : totalDuration > 500 ? '⚠️' : '✅';
+  // status variable removed as it was unused
   // ...existing code...
       }
 

@@ -58,7 +58,7 @@ export default function MgidNativeAd({
         // Trigger MGID widget load
         window._mgq.push(['_mgc.load']);
         setIsLoaded(true);
-      } catch (error) {
+      } catch {
         // Silently handle MGID loading errors
       }
     } else if (typeof window !== 'undefined' && !window._mgq) {

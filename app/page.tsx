@@ -99,7 +99,7 @@ export default async function Home() {
       'homepage-posts'
     );
     posts = data?.posts?.nodes || [];
-  } catch (error) {
+  } catch {
     // Silently handle error, use empty posts array
     posts = [];
   }
