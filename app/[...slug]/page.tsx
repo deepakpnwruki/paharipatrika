@@ -510,6 +510,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
 
               {/* Related */}
               {/* Related section removed as per request */}
+
             </article>
 
             {/* RIGHT: Sidebar - Desktop Only */}
