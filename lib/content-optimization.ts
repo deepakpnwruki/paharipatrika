@@ -19,24 +19,20 @@ export function insertAdsInContent(content: string): string {
 
   // Split by paragraphs more efficiently
   const paragraphs = content.split('</p>');
-  if (paragraphs.length <= 3) return content; // Don't insert ads in very short content
+  if (paragraphs.length <= 2) return content; // Don't insert ads in very short content
 
   const result: string[] = [];
-  
   for (let i = 0; i < paragraphs.length; i++) {
     result.push(paragraphs[i]);
-    
     // Add closing </p> tag except for the last item
     if (i < paragraphs.length - 1) {
       result.push('</p>');
     }
-    
-    // Insert ad slot every 3 paragraphs (instead of 2 for better readability)
-    if ((i + 1) % 3 === 0 && i < paragraphs.length - 2) {
-      result.push('<div class="article-ad-slot" data-ad-type="in-content"></div>');
+    // Insert ad slot every 2 paragraphs
+    if ((i + 1) % 2 === 0 && i < paragraphs.length - 1) {
+      result.push('<div class="article-ad-slot"></div>');
     }
   }
-  
   return result.join('');
 }
 
@@ -83,10 +79,21 @@ export function generateOptimizedBreadcrumbs(node: any): Array<{name: string, hr
   }
   
   // Add current page (without link)
-  breadcrumbs.push({
-    name: node.title || node.name || 'Article',
-    href: '' // Current page, no link
-  });
+  let articleName = '';
+  if (node.__typename === 'Post' && node.slug) {
+    // Convert slug to Title Case with spaces
+    articleName = node.slug
+      .replace(/[-_]+/g, ' ')
+      .replace(/\b\w/g, (c: string) => c.toUpperCase());
+  } else {
+    articleName = node.title || node.name || '';
+  }
+  if (articleName) {
+    breadcrumbs.push({
+      name: articleName,
+      href: '' // Current page, no link
+    });
+  }
   
   return breadcrumbs;
 }

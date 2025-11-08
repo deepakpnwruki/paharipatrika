@@ -17,12 +17,24 @@ export default function MgidNativeAd({
   const [isVisible, setIsVisible] = useState(!lazy);
   const [isLoaded, setIsLoaded] = useState(false);
 
+
+  // Dynamically load MGID script if not present
+  useEffect(() => {
+    const MGID_SCRIPT_ID = 'mgid-main-script';
+    if (!document.getElementById(MGID_SCRIPT_ID)) {
+      const script = document.createElement('script');
+      script.id = MGID_SCRIPT_ID;
+      script.src = 'https://jsc.mgid.com/paharipatrika.in.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
   useEffect(() => {
     if (!lazy) {
       loadMgidAd();
       return;
     }
-
     // Intersection Observer for lazy loading
     const observer = new IntersectionObserver(
       (entries) => {
@@ -38,11 +50,9 @@ export default function MgidNativeAd({
         threshold: 0.1,
       }
     );
-
     if (adRef.current) {
       observer.observe(adRef.current);
     }
-
     return () => observer.disconnect();
   }, [lazy, isVisible]);
 
