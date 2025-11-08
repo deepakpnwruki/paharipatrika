@@ -95,7 +95,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...categories,
       ...tags,
     ];
-  } catch (error) {
+  } catch {
     return [
       {
         url: siteUrl,

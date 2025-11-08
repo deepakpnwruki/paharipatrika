@@ -83,7 +83,7 @@ export default function TagPostsList({
         setPosts((prev) => [...prev, ...(data.posts || [])]);
         setHasNextPage(data.hasNextPage || false);
         setEndCursor(data.endCursor || null);
-      } catch (error) {
+        } catch {
       }
     });
   };

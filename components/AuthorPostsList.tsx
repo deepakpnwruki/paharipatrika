@@ -71,7 +71,7 @@ export default function AuthorPostsList({
 
     startTransition(async () => {
       try {
-        const response = await fetch('/api/load-more-posts', {
+          const response = await fetch('/api/load-more-posts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -88,7 +88,7 @@ export default function AuthorPostsList({
         setPosts((prev) => [...prev, ...(data.posts || [])]);
         setHasNextPage(data.hasNextPage || false);
         setEndCursor(data.endCursor || null);
-      } catch (error) {
+        } catch {
       }
     });
   };

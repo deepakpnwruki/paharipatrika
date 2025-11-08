@@ -42,14 +42,16 @@ export async function GET() {
       {},
       revalidate
     );
-    
     return NextResponse.json({
       posts: data?.posts?.nodes || []
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { error: 'Failed to fetch posts', posts: [] },
+      { posts: [] },
       { status: 500 }
     );
   }
 }
+
+
+

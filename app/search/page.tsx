@@ -22,7 +22,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
       const nodes = data.posts?.nodes ?? [];
       const normalizedQuery = q.toLowerCase().trim();
       posts = nodes.filter((n:any)=> (n.title||'').toLowerCase().includes(normalizedQuery));
-    } catch (error) {
+        } catch {
     }
   }
   return (

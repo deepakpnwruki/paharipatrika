@@ -35,8 +35,8 @@ export default function AccountPage() {
       } else {
         setMessage('Unexpected response from server.');
       }
-    } catch (err) {
-  setMessage('Network error');
+    } catch {
+      setMessage('Network error');
     }
     setLoading(false);
   };

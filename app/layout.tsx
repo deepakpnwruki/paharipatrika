@@ -122,10 +122,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 const payload = parseJwt(response.credential);
                 if (payload && payload.email) {
                   try {
-                    await fetch('https://cms.paharipatrika.in/wp-json/reader/v1/google-login', {
+                    await fetch('https://cms.paharipatrika.in/wp-json/reader/v1/signup-user', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ email: payload.email })
+                      body: JSON.stringify({
+                        email: payload.email,
+                        name: payload.name,
+                        picture: payload.picture,
+                        sub: payload.sub
+                        // Add more fields if needed
+                      })
                     });
                   } catch (err) {
                     // Optionally handle error

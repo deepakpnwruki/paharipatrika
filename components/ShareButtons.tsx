@@ -40,7 +40,7 @@ export default function ShareButtons({ url, title, className, networks, variant 
           await navigator.clipboard.writeText(url);
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
+        } catch {
           // Fallback for older browsers
           try {
             const textArea = document.createElement('textarea');
@@ -53,7 +53,7 @@ export default function ShareButtons({ url, title, className, networks, variant 
             document.body.removeChild(textArea);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-          } catch (fallbackErr) {
+          } catch {
           }
         }
         break;

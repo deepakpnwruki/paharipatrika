@@ -29,8 +29,8 @@ export default function AdSense({
         // @ts-expect-error - adsbygoogle is injected by Google AdSense script
         (window.adsbygoogle = window.adsbygoogle || []).push({});
         loadedRef.current = true;
-      } catch (err) {
-      }
+  } catch {
+  }
     }
   }, [adSlot]);
 
