@@ -35,8 +35,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Static organization and website schema removed. Only Yoast schema will be used.
 
   return (
-    <html lang="hi" dir="ltr">
-      <head>
+  <html lang="hi" dir="ltr">
+  <head>
         <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/feed.xml" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -58,10 +58,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             strategy="afterInteractive"
           />
         )}
+        {/* Google One Tap Sign-In */}
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+        />
         {/* Structured Data: Use Script for hydration safety */}
         {/* Static schema removed. Only Yoast schema will be injected by page-level metadata. */}
       </head>
-      <body>
+  <body>
         <nav aria-label="Main navigation">
           <Header logoUrl={logoUrl} siteTitle={siteTitle} categories={categories} />
         </nav>
@@ -71,6 +76,65 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <footer role="contentinfo">
           <FooterStatic />
         </footer>
+        {/* Google One Tap global init */}
+        <Script
+          id="google-one-tap-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.onGoogleOneTapLoad = function() {
+                if (window.google && window.google.accounts && window.google.accounts.id) {
+                  window.google.accounts.id.initialize({
+                    client_id: '995344648059-mcie9n87elmccoa4fb75tk8se87h1ft1.apps.googleusercontent.com',
+                    callback: function(response) {
+                      // You can handle the credential here or dispatch a custom event
+                      window.dispatchEvent(new CustomEvent('google-one-tap-credential', { detail: response }));
+                    },
+                  });
+                  window.google.accounts.id.prompt();
+                }
+              };
+              if (window.google && window.google.accounts && window.google.accounts.id) {
+                window.onGoogleOneTapLoad();
+              } else {
+                window.addEventListener('load', function() {
+                  setTimeout(window.onGoogleOneTapLoad, 500);
+                });
+              }
+            `
+          }}
+        />
+        {/* Google One Tap credential handler: decode JWT and send email to backend */}
+        <Script
+          id="google-one-tap-handler"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('google-one-tap-credential', async function(e) {
+                const response = e.detail;
+                function parseJwt(token) {
+                  try {
+                    return JSON.parse(atob(token.split('.')[1]));
+                  } catch {
+                    return null;
+                  }
+                }
+                const payload = parseJwt(response.credential);
+                if (payload && payload.email) {
+                  try {
+                    await fetch('https://cms.paharipatrika.in/wp-json/reader/v1/google-login', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: payload.email })
+                    });
+                  } catch (err) {
+                    // Optionally handle error
+                  }
+                }
+              });
+            `
+          }}
+        />
         {/* Google Analytics 4 (GA4) */}
         {process.env.NEXT_PUBLIC_GA_ID && (
           <Script
