@@ -43,10 +43,10 @@ export default function ArticleContentWithAds({ content, inArticleAdSlot }: Arti
         if (clientId) {
           const ins = document.createElement('ins');
           ins.className = 'adsbygoogle';
-          ins.style.cssText = 'display:block';
+          ins.style.cssText = 'display:block;width:300px;height:250px;';
           ins.setAttribute('data-ad-client', clientId);
           ins.setAttribute('data-ad-slot', inArticleAdSlot);
-          ins.setAttribute('data-ad-format', 'auto');
+          ins.setAttribute('data-ad-format', 'rectangle');
           ins.setAttribute('data-full-width-responsive', 'false');
           adsenseContainer.appendChild(ins);
           _adInjected = true;

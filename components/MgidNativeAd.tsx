@@ -18,17 +18,7 @@ export default function MgidNativeAd({
   const [isLoaded, setIsLoaded] = useState(false);
 
 
-  // Dynamically load MGID script if not present
-  useEffect(() => {
-    const MGID_SCRIPT_ID = 'mgid-main-script';
-    if (!document.getElementById(MGID_SCRIPT_ID)) {
-      const script = document.createElement('script');
-      script.id = MGID_SCRIPT_ID;
-      script.src = 'https://jsc.mgid.com/paharipatrika.in.js';
-      script.async = true;
-      document.body.appendChild(script);
-    }
-  }, []);
+  // MGID script is loaded globally in layout, so do not load it here
 
   useEffect(() => {
     if (!lazy) {
