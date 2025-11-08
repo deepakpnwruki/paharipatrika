@@ -10,7 +10,6 @@ import {
 import ShareButtonsClient from './ShareButtonsClient';
 import ImageCaption from '../../components/ImageCaption';
 import InArticleAd from '../../components/InArticleAd';
-import MgidNativeAd from '../../components/MgidNativeAd';
 import ArticleContentWithAds from '../../components/ArticleContentWithAds';
 import SocialEmbeds from '../../components/SocialEmbeds';
 import EmbedProcessor from '../../components/EmbedProcessor';
@@ -173,8 +172,14 @@ export async function generateMetadata(
   const { node } = await resolveNode(slug);
   if (!node) return { title: 'Not found' };
 
-  // Use Yoast SEO fields only
+  // Use Yoast SEO fields only, but enhance with categories/tags for richer schema
   const seo = node.seo || {};
+  // Extract categories and tags for schema
+  const categories = Array.isArray(node.categories?.nodes) ? node.categories.nodes.map((c: any) => c.name).filter(Boolean) : [];
+  const tags = Array.isArray(node.tags?.nodes) ? node.tags.nodes.map((t: any) => t.name).filter(Boolean) : [];
+  // Compose articleSection and keywords
+  const articleSection = categories.length > 0 ? categories.join(', ') : undefined;
+  const keywords = tags.length > 0 ? tags : (seo.focuskw ? [seo.focuskw] : []);
   return {
     title: seo.title || node.title || node.name || 'Article',
     description: seo.metaDesc || '',
@@ -191,11 +196,13 @@ export async function generateMetadata(
       locale: 'hi_IN',
       siteName: process.env.SITE_NAME || 'Pahari Patrika',
       images: seo.opengraphImage?.sourceUrl
-        ? [{ url: seo.opengraphImage.sourceUrl, width: 1200, height: 630, alt: node.title || node.name }]
+        ? [{ url: seo.opengraphImage.sourceUrl, width: 1200, height: 630, alt: seo.opengraphImage?.altText || node.title || node.name || 'Article image' }]
         : [],
       publishedTime: (node as any)?.date,
       modifiedTime: (node as any)?.modified,
       authors: (node as any)?.author?.node?.name ? [(node as any).author.node.name] : [],
+      section: articleSection,
+      tags: keywords,
     },
     twitter: {
       card: 'summary_large_image',
@@ -203,6 +210,9 @@ export async function generateMetadata(
       description: seo.twitterDescription || seo.metaDesc || '',
       images: seo.twitterImage?.sourceUrl ? [seo.twitterImage.sourceUrl] : [],
     },
+    // Add keywords and articleSection for search engines
+    keywords: keywords.length > 0 ? keywords.join(', ') : undefined,
+    ...(articleSection && { articleSection }),
   };
 }
 
@@ -387,13 +397,15 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
               {img?.sourceUrl && (
                 <ImageCaption
                   src={img.sourceUrl}
-                  alt={img?.altText || node.title || 'Article image'}
+                  alt={img?.altText || img?.caption || img?.description || node.title || 'Article image'}
                   width={768}
                   height={432}
                   priority
                   sizes="(max-width: 768px) 100vw, 768px"
                   className="es-hero__img"
-                  caption={(img?.caption || img?.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240) || (img?.altText || '')}
+                  caption={
+                    (img?.caption || img?.description || img?.altText || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240) || (node.title || '')
+                  }
                 />
               )}
             </div>
@@ -422,7 +434,7 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
                       <div className="es-author-eeat__avatar">
                         <Image 
                           src={node.author.node.avatar.url} 
-                          alt={node.author.node.name} 
+                          alt={node.author.node.name || 'Author avatar'} 
                           width={64}
                           height={64}
                           className="es-author-eeat__img" 
@@ -488,12 +500,6 @@ export default async function NodePage({ params }: { params: ParamPromise }) {
 
               {/* Related Articles section removed to reduce API load */}
 
-              {/* MGID Native Ad after Related Articles - Lazy Loaded - Mobile & Desktop */}
-              <MgidNativeAd 
-                widgetId="1520454"
-                className="after-related-mgid-ad"
-                lazy={true}
-              />
 
               {/* Tags */}
 

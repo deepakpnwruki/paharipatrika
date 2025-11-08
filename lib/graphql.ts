@@ -6,7 +6,7 @@ const ENABLE_PERF_LOGS = process.env.ENABLE_GRAPHQL_PERF_LOGS === 'true';
 export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: number, tag?: string): Promise<T> {
   const endpoint = process.env.WP_GRAPHQL_ENDPOINT || process.env.WP_GRAPHQL_URL;
   if (!endpoint) {
-    console.error('Missing WP_GRAPHQL_ENDPOINT environment variable');
+  // ...existing code...
     throw new Error('WordPress GraphQL endpoint not configured');
   }
   const rv = revalidate ?? Number(process.env.REVALIDATE_SECONDS ?? 300);
@@ -17,14 +17,13 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
   const maxRetries = Number(process.env.WP_FETCH_RETRIES ?? 3); // Increased retries
 
   // Extract query name for logging
-  const queryName = query.match(/(?:query|mutation)\s+(\w+)/)?.[1] || 'UnnamedQuery';
-  const totalStartTime = Date.now();
+  // ...existing code...
 
   let lastErr: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), timeoutMs);
-    const attemptStartTime = Date.now();
+  // ...existing code...
     
     try {
       const res = await fetch(endpoint, {
@@ -43,18 +42,14 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
       });
       clearTimeout(t);
 
-      const fetchDuration = Date.now() - attemptStartTime;
+  // ...existing code...
 
       if (!res.ok) {
-        if (ENABLE_PERF_LOGS) {
-          console.warn(`⚠️  [${queryName}] HTTP ${res.status} in ${fetchDuration}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
-        }
         // Retry only on 5xx
         if (res.status >= 500 && attempt < maxRetries) {
           await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // Increased delay
           continue;
         }
-        console.error(`WPGraphQL HTTP Error: ${res.status} ${res.statusText}`);
         throw new Error(`WordPress GraphQL request failed: ${res.status}`);
       }
 
@@ -63,14 +58,13 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
 
       // Performance logging
       if (ENABLE_PERF_LOGS) {
-  // status variable removed as it was unused
   // ...existing code...
       }
 
       if (json.errors) {
         // Bubble the first error message
         const msg = Array.isArray(json.errors) && json.errors[0]?.message ? json.errors[0].message : 'GraphQL query failed';
-        console.error('GraphQL Errors:', json.errors);
+  // ...existing code...
         throw new Error(msg);
       }
       return json.data as T;
@@ -78,12 +72,6 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
       clearTimeout(t);
       lastErr = error;
       
-      const attemptDuration = Date.now() - attemptStartTime;
-      if (ENABLE_PERF_LOGS) {
-        console.error(`❌ [${queryName}] Failed in ${attemptDuration}ms (attempt ${attempt + 1}/${maxRetries + 1}):`, error instanceof Error ? error.message : error);
-      }
-      
-      // Retry aborted/network/5xx only
       if (attempt < maxRetries) {
         await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // Increased delay
         continue;
@@ -91,7 +79,5 @@ export async function wpFetch<T>(query: string, variables?: Vars, revalidate?: n
     }
   }
   
-  const totalDuration = Date.now() - totalStartTime;
-  console.error(`❌ [${queryName}] All retries failed after ${totalDuration}ms:`, lastErr);
   throw lastErr as Error;
 }

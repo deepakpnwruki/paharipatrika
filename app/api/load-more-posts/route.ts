@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
       hasNextPage,
       endCursor,
     });
-  } catch (error) {
-    console.error('Error loading more posts:', error);
+  } catch {
+  // ...existing code...
     return NextResponse.json(
       { error: 'Failed to load posts' },
       { status: 500 }

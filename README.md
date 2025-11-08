@@ -9,7 +9,7 @@ Hindi news website built with Next.js 16 and WordPress headless CMS.
 - Hindi language support
 - SEO optimized with Yoast integration
 - Google News sitemap
-- AdSense & MGID native ads
+- AdSense native ads
 - ISR caching for performance
 
 ## Development

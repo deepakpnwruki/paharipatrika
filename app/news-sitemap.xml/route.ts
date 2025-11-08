@@ -164,8 +164,8 @@ ${keywordsString}    </news:news>
         'Cache-Control': 'public, max-age=600, s-maxage=600', // Cache for 10 minutes
       },
     });
-  } catch (error) {
-    console.error('Error generating news sitemap:', error);
+  } catch {
+  // ...existing code...
     
     // Return minimal valid sitemap on error
     const errorXml = `<?xml version="1.0" encoding="UTF-8"?>

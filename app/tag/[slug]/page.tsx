@@ -104,8 +104,8 @@ export default async function TagPage({ params }: TagPageProps) {
       revalidate
     );
     tag = data?.tag;
-  } catch (error) {
-    console.error('Error fetching tag:', error);
+  } catch {
+  // ...existing code...
   }
   
   if (!tag) notFound();

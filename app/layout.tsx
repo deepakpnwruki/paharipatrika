@@ -48,9 +48,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://cms.paharipatrika.in" crossOrigin="" />
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="" />
-        {/* MGID DNS prefetch for better performance */}
-        <link rel="dns-prefetch" href="https://jsc.mgid.com" />
-        <link rel="preconnect" href="https://servicer.mgid.com" />
         <meta name="format-detection" content="telephone=no" />
         {/* Google AdSense */}
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID && (
@@ -61,12 +58,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             strategy="afterInteractive"
           />
         )}
-        {/* MGID Native Ads Script */}
-        <Script
-          src="https://jsc.mgid.com/site/676618.js"
-          strategy="lazyOnload"
-          async
-        />
         {/* Structured Data: Use Script for hydration safety */}
         {/* Static schema removed. Only Yoast schema will be injected by page-level metadata. */}
       </head>

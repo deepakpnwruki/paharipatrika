@@ -61,8 +61,8 @@ export default function ArticleContentWithAds({ content, inArticleAdSlot }: Arti
           try {
             // @ts-expect-error - adsbygoogle is injected by Google AdSense script
             (window.adsbygoogle = window.adsbygoogle || []).push({});
-          } catch (err) {
-            console.error('[Ads] AdSense error:', err);
+      } catch {
+        // ...existing code...
           }
         }
 

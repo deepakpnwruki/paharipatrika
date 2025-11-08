@@ -72,26 +72,27 @@
   width: 100vw;
   position: relative;
   left: 50%;
-  right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
-  overflow-x: visible;
-  background: #fff;
-  margin-bottom: 0.3rem;
-}
-/* --- Article Tags Nav (Horizontal, like header menu) --- */
-/* --- Article Tags Nav (Match Top Nav) --- */
-.es-article-tags-nav {
-  margin: 0.7rem 0 0.5rem 0;
-  background: #fff;
-  border-bottom: 1px solid #f3f4f6;
-  position: relative;
-  padding: 0 0.5rem;
-  box-sizing: border-box;
-  max-width: 100%;
-}
-.es-article-tags-nav__list {
+/* MGID Native Ad Styles */
+/* .mgid-native-ad {
+  margin: 2rem 0;
+  width: 100%;
   display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: opacity 0.3s ease;
+}
+.after-related-mgid-ad {
+  margin: 2.5rem auto;
+  max-width: 600px;
+}
+.mgid-native-ad:not(:has([data-type="_mgwidget"])) {
+  background: linear-gradient(90deg, #f0f0f0 25%, transparent 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+} */
   flex-direction: row;
   gap: 0.4rem;
   list-style: none;
