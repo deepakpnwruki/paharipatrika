@@ -1,59 +1,64 @@
 /* Responsive container and form styles */
 .login-container {
   max-width: 400px;
-  margin: 32px auto;
+  margin: 40px auto 0 auto;
   background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
-  padding: 32px 24px 24px 24px;
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+  padding: 36px 28px 28px 28px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  min-height: 70vh;
 }
 
 .login-title {
-  font-size: 2rem;
+  font-size: 2.1rem;
   font-weight: 700;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
   text-align: center;
+  letter-spacing: 0.5px;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .login-phone-group {
   display: flex;
   align-items: center;
   background: #f7f7f7;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid #e0e0e0;
-  padding: 0 12px;
+  padding: 0 14px;
   margin-bottom: 8px;
+  min-height: 48px;
 }
 
 @media (max-width: 600px) {
   .login-container {
-    max-width: 98vw;
-    padding: 18px 4vw 18px 4vw;
-    margin: 16px auto;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    max-width: 99vw;
+    padding: 12vw 2vw 10vw 2vw;
+    margin: 0 auto;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.09);
+    min-height: 80vh;
   }
   .login-title {
-    font-size: 1.3rem;
-    margin-bottom: 12px;
+    font-size: 1.25rem;
+    margin-bottom: 14px;
   }
   .login-form {
-    gap: 8px;
+    gap: 10px;
   }
   .login-phone-group {
-    padding: 0 6px;
+    padding: 0 4px;
+    min-height: 44px;
   }
   .login-continue-btn {
     font-size: 1rem;
-    padding: 10px 0;
+    padding: 11px 0;
   }
 }
 /* Restored minimal CSS for account page. Add your styles as needed. */
@@ -74,28 +79,31 @@
   display: inline-flex;
   align-items: center;
   color: #222;
-  font-size: 1.08rem;
-  margin-right: 6px;
+  font-size: 1.13rem;
+  margin-right: 8px;
 }
 .login-phone-country-code {
   font-weight: 700;
   font-size: 1.13rem;
   margin-left: 0;
+  letter-spacing: 0.5px;
 }
 .login-phone-input {
   border: none;
   outline: none;
-  font-size: 1rem;
+  font-size: 1.08rem;
   background: transparent;
   flex: 1;
-  padding: 12px 0;
+  padding: 14px 0 14px 2px;
+  min-width: 0;
 }
 .login-terms {
   color: #444;
   margin-bottom: 0;
 }
 .login-terms.small {
-  font-size: 0.85rem;
+  font-size: 0.93rem;
+  line-height: 1.5;
 }
 .login-link {
   color: #b80000;
@@ -106,12 +114,13 @@
   color: #fff;
   font-weight: 600;
   border: none;
-  border-radius: 6px;
-  padding: 12px 0;
-  font-size: 1.1rem;
+  border-radius: 8px;
+  padding: 13px 0;
+  font-size: 1.13rem;
   margin-top: 8px;
   cursor: pointer;
   transition: background 0.2s;
+  width: 100%;
 }
 .login-continue-btn:hover {
   background: #a00000;
