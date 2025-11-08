@@ -38,14 +38,14 @@ const nextConfig = {
       "img-src * data: blob:",
       "media-src * data: blob:",
       "style-src 'self' 'unsafe-inline'",
-      // Allow AdSense and Twitter scripts
-      `script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://adservice.google.com https://www.googletagmanager.com https://platform.twitter.com${isProd ? '' : " 'unsafe-eval'"}`,
+      // Allow AdSense, Twitter, and Google One Tap scripts
+      `script-src 'self' 'unsafe-inline' https://accounts.google.com https://pagead2.googlesyndication.com https://adservice.google.com https://www.googletagmanager.com https://platform.twitter.com${isProd ? '' : " 'unsafe-eval'"}`,
       // Allow connections to CMS, AdSense, and Twitter endpoints
       "connect-src * https://pagead2.googlesyndication.com https://platform.twitter.com https://syndication.twitter.com",
       "font-src 'self' data:",
       "object-src 'none'",
-      // Allow AdSense, Twitter widgets, and YouTube iframes
-      "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://platform.twitter.com https://www.youtube.com https://www.youtube-nocookie.com",
+      // Allow AdSense, Twitter widgets, YouTube, and Google One Tap iframes
+      "frame-src https://accounts.google.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://platform.twitter.com https://www.youtube.com https://www.youtube-nocookie.com",
       "frame-ancestors 'self'"
     ].join('; ');
 

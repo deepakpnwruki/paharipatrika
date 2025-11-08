@@ -89,7 +89,6 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
   }
   
   if (!page) {
-    console.error(`Page not found for slugs: ${slug.join('/')}, tried URIs: ${uris.join(', ')}`);
     notFound();
   }
 

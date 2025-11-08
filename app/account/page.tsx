@@ -36,8 +36,7 @@ export default function AccountPage() {
         setMessage('Unexpected response from server.');
       }
     } catch (err) {
-      setMessage('Network error');
-      console.error('Network error:', err);
+  setMessage('Network error');
     }
     setLoading(false);
   };

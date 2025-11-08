@@ -47,7 +47,6 @@ export async function GET() {
       posts: data?.posts?.nodes || []
     });
   } catch (error) {
-    console.error('Error fetching posts:', error);
     return NextResponse.json(
       { error: 'Failed to fetch posts', posts: [] },
       { status: 500 }

@@ -30,7 +30,6 @@ export default function AdSense({
         (window.adsbygoogle = window.adsbygoogle || []).push({});
         loadedRef.current = true;
       } catch (err) {
-        console.error('AdSense error:', err);
       }
     }
   }, [adSlot]);

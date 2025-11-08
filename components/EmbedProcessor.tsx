@@ -12,11 +12,8 @@ export default function EmbedProcessor({ content }: EmbedProcessorProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        DEBUG && console.log('[EmbedProcessor] Start processing embeds');
         processEmbeds();
-        DEBUG && console.log('[EmbedProcessor] Finished processing embeds');
       } catch (error) {
-        console.error('[EmbedProcessor] Error processing embeds:', error);
       }
     }, 1000);
 
@@ -44,7 +41,6 @@ export default function EmbedProcessor({ content }: EmbedProcessorProps) {
     const wrappers: Element[] = [];
     selectors.forEach(sel => document.querySelectorAll(sel).forEach(el => wrappers.push(el)));
     let injectedCount = 0;
-    DEBUG && console.log(`[EmbedProcessor] YouTube: found ${wrappers.length} potential wrappers`);
 
     wrappers.forEach((embed) => {
       if (embed.querySelector('iframe')) return;
@@ -69,7 +65,6 @@ export default function EmbedProcessor({ content }: EmbedProcessorProps) {
         }
       }
     });
-    DEBUG && console.log(`[EmbedProcessor] YouTube: injected ${injectedCount} iframes`);
   };
 
   const processTwitterEmbeds = () => {
@@ -96,7 +91,6 @@ export default function EmbedProcessor({ content }: EmbedProcessorProps) {
       }
     });
 
-    DEBUG && console.log(`[EmbedProcessor] Twitter: found ${allTwitterEmbeds.length} potential wrappers`);
     let transformed = 0;
 
     allTwitterEmbeds.forEach((embed) => {
@@ -128,17 +122,14 @@ export default function EmbedProcessor({ content }: EmbedProcessorProps) {
     setTimeout(() => {
       const twttr = typeof window !== 'undefined' ? (window as any).twttr : undefined;
       if (twttr?.widgets) {
-        DEBUG && console.log(`[EmbedProcessor] Twitter: widgets.load() called; transformed=${transformed}`);
         twttr.widgets.load();
       } else {
-        DEBUG && console.warn('[EmbedProcessor] Twitter: widgets API not available yet');
       }
     }, 2000);
   };
 
   const styleIframes = () => {
     const iframeEmbeds = document.querySelectorAll('figure.wp-block-embed iframe');
-    DEBUG && console.log(`[EmbedProcessor] Style iframes: found ${iframeEmbeds.length}`);
     iframeEmbeds.forEach((iframe) => {
       if (iframe instanceof HTMLIFrameElement) {
         iframe.style.maxWidth = '100%';

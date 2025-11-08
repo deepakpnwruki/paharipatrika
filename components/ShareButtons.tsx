@@ -19,7 +19,6 @@ export default function ShareButtons({ url, title, className, networks, variant 
   const handleShare = async (platform: Network) => {
     // Validate inputs
     if (!url || !title) {
-      console.error('Share error: Missing url or title');
       return;
     }
 
@@ -42,7 +41,6 @@ export default function ShareButtons({ url, title, className, networks, variant 
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         } catch (err) {
-          console.error('Failed to copy:', err);
           // Fallback for older browsers
           try {
             const textArea = document.createElement('textarea');
@@ -56,7 +54,6 @@ export default function ShareButtons({ url, title, className, networks, variant 
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
           } catch (fallbackErr) {
-            console.error('Fallback copy also failed:', fallbackErr);
           }
         }
         break;

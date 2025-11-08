@@ -89,7 +89,6 @@ export default function AuthorPostsList({
         setHasNextPage(data.hasNextPage || false);
         setEndCursor(data.endCursor || null);
       } catch (error) {
-        console.error('Error loading more posts:', error);
       }
     });
   };

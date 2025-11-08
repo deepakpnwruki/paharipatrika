@@ -87,7 +87,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   window.google.accounts.id.initialize({
                     client_id: '995344648059-mcie9n87elmccoa4fb75tk8se87h1ft1.apps.googleusercontent.com',
                     callback: function(response) {
-                      console.log('[OneTap] Credential received:', response);
                       // You can handle the credential here or dispatch a custom event
                       window.dispatchEvent(new CustomEvent('google-one-tap-credential', { detail: response }));
                     },

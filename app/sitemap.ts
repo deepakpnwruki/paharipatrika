@@ -96,7 +96,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...tags,
     ];
   } catch (error) {
-    console.error('Error generating sitemap:', error);
     return [
       {
         url: siteUrl,
