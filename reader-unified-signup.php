@@ -38,15 +38,14 @@ Author: Your Name
 
 if (!defined('ABSPATH')) exit;
 
-// Create or update custom table for mobile and Google signups
+// Create or update custom table for Google signups only
 register_activation_hook(__FILE__, function() {
     global $wpdb;
     $table = $wpdb->prefix . 'reader_mobiles';
     $charset_collate = $wpdb->get_charset_collate();
     $sql = "CREATE TABLE IF NOT EXISTS $table (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        mobile VARCHAR(20) DEFAULT NULL,
-    email VARCHAR(100) UNIQUE,
+        email VARCHAR(100) UNIQUE,
         name VARCHAR(100) DEFAULT NULL,
         source VARCHAR(20) DEFAULT NULL,
         google_sub VARCHAR(100) DEFAULT NULL,
@@ -68,7 +67,7 @@ register_activation_hook(__FILE__, function() {
 });
 
 
-// Google One Tap endpoint (signup/login) - also stores in custom table
+// Google One Tap endpoint (signup/login) - stores in custom table
 add_action('rest_api_init', function() {
     register_rest_route('reader/v1', '/google-login', array(
         'methods' => array('POST', 'OPTIONS'),
@@ -84,9 +83,8 @@ add_action('rest_api_init', function() {
             $name = isset($params['name']) ? sanitize_text_field($params['name']) : '';
             $picture = isset($params['picture']) ? esc_url_raw($params['picture']) : '';
             $sub = isset($params['sub']) ? sanitize_text_field($params['sub']) : '';
-            $mobile = isset($params['mobile']) ? sanitize_text_field($params['mobile']) : '';
-            if (!$email || !$name || !$mobile || !$sub) {
-                return new WP_REST_Response(['success' => false, 'message' => 'Email, name, mobile, and sub are required.'], 400);
+            if (!$email || !$name || !$sub) {
+                return new WP_REST_Response(['success' => false, 'message' => 'Email, name, and sub are required.'], 400);
             }
             $user = get_user_by('email', $email);
             global $wpdb;
@@ -115,7 +113,6 @@ add_action('rest_api_init', function() {
                 $wpdb->insert($table, [
                     'email' => $email,
                     'name' => $name,
-                    'mobile' => $mobile,
                     'source' => 'google',
                     'google_sub' => $sub,
                     'google_picture' => $picture,
