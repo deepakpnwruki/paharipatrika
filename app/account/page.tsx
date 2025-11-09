@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./account.css";
 
 type UserProfile = {
@@ -10,10 +10,12 @@ type UserProfile = {
   picture?: string;
 };
 
+
 function AccountPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -31,10 +33,71 @@ function AccountPage() {
     fetchProfile();
   }, []);
 
-  // Google One Tap handler (placeholder)
+  // Google One Tap integration
   useEffect(() => {
-    // TODO: Integrate real Google One Tap here
-  }, []);
+    if (profile) return; // Don't show One Tap if already signed in
+    // Load Google script
+    if (!(window as any).google && !document.getElementById('google-onetap-js')) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.id = 'google-onetap-js';
+      document.body.appendChild(script);
+      script.onload = initializeOneTap;
+    } else {
+      initializeOneTap();
+    }
+
+    function initializeOneTap() {
+      if (!(window as any).google || profile) return;
+      (window as any).google.accounts.id.initialize({
+        client_id: '995344648059-mcie9n87elmccoa4fb75tk8se87h1ft1.apps.googleusercontent.com',
+        callback: async (response: any) => {
+          try {
+            // Decode JWT
+            const base64Url = response.credential.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            const data = JSON.parse(jsonPayload);
+            // Send to backend
+            const res = await fetch('/api/account/google-signup', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: data.email,
+                name: data.name,
+                sub: data.sub,
+                picture: data.picture
+              })
+            });
+            const result = await res.json();
+            if (result && result.user) {
+              setProfile(result.user);
+            } else {
+              setError(result?.message || 'Signup failed');
+            }
+          } catch (e) {
+            setError('Google login failed');
+          }
+        },
+        ux_mode: 'popup',
+      });
+      (window as any).google.accounts.id.renderButton(
+        googleButtonRef.current,
+        { theme: 'outline', size: 'large', width: 320 }
+      );
+      (window as any).google.accounts.id.prompt();
+    }
+    // Cleanup
+    return () => {
+      if ((window as any).google && (window as any).google.accounts.id) {
+        (window as any).google.accounts.id.cancel();
+      }
+    };
+  }, [profile]);
 
   if (loading) {
     return (
@@ -61,7 +124,7 @@ function AccountPage() {
   return (
     <div className="login-container">
       <h2 className="login-title">Sign Up / Log In</h2>
-      {/* Google One Tap button/logic would go here */}
+      <div ref={googleButtonRef} style={{ display: 'flex', justifyContent: 'center', margin: '32px 0' }} />
       <p style={{ color: '#888', textAlign: 'center', marginTop: 24 }}>Sign in with Google to continue</p>
       {error && <p style={{ color: "red", marginTop: 8 }}>{error}</p>}
     </div>
