@@ -21,8 +21,7 @@ function AccountPage() {
   useEffect(() => {
     function getUserProfile() {
       try {
-        const item = localStorage.getItem('pp_google_user');
-        return item ? JSON.parse(item) : null;
+        return JSON.parse(localStorage.getItem('pp_google_user') || 'null');
       } catch { return null; }
     }
     const user = getUserProfile();
@@ -93,5 +92,6 @@ function AccountPage() {
     </div>
   );
 }
+
 
 export default AccountPage;
