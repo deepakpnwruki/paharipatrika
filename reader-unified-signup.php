@@ -1,3 +1,32 @@
+// REST endpoint to delete a Google user by email
+add_action('rest_api_init', function() {
+    register_rest_route('reader/v1', '/delete-google-user', array(
+        'methods' => array('POST', 'OPTIONS'),
+        'callback' => function($request) {
+            header('Access-Control-Allow-Origin: *');
+            header('Access-Control-Allow-Methods: POST, OPTIONS');
+            header('Access-Control-Allow-Headers: Content-Type');
+            if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+                return new WP_REST_Response(null, 204);
+            }
+            $params = $request->get_json_params();
+            $email = isset($params['email']) ? sanitize_email($params['email']) : '';
+            if (!$email) {
+                return new WP_REST_Response(['success' => false, 'message' => 'Email is required.'], 400);
+            }
+            global $wpdb;
+            $table = $wpdb->prefix . 'reader_mobiles';
+            $wpdb->delete($table, ['email' => $email]);
+            $user = get_user_by('email', $email);
+            if ($user) {
+                require_once(ABSPATH.'wp-admin/includes/user.php');
+                wp_delete_user($user->ID);
+            }
+            return new WP_REST_Response(['success' => true, 'message' => 'User deleted.']);
+        },
+        'permission_callback' => '__return_true',
+    ));
+});
 
 <?php
 /*
@@ -17,7 +46,7 @@ register_activation_hook(__FILE__, function() {
     $sql = "CREATE TABLE IF NOT EXISTS $table (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
         mobile VARCHAR(20) DEFAULT NULL,
-        email VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(100) UNIQUE,
         name VARCHAR(100) DEFAULT NULL,
         source VARCHAR(20) DEFAULT NULL,
         google_sub VARCHAR(100) DEFAULT NULL,
@@ -38,54 +67,6 @@ register_activation_hook(__FILE__, function() {
     }
 });
 
-// REST endpoint for mobile signup/update
-add_action('rest_api_init', function() {
-    register_rest_route('reader/v1', '/save-mobile', array(
-        'methods' => array('POST', 'OPTIONS'),
-        'callback' => function($request) {
-            header('Access-Control-Allow-Origin: *');
-            header('Access-Control-Allow-Methods: POST, OPTIONS');
-            header('Access-Control-Allow-Headers: Content-Type');
-            if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-                return new WP_REST_Response(null, 204);
-            }
-            $params = $request->get_json_params();
-            $mobile = isset($params['mobile']) ? sanitize_text_field($params['mobile']) : '';
-            $name = isset($params['name']) ? sanitize_text_field($params['name']) : '';
-            $email = isset($params['email']) ? sanitize_email($params['email']) : '';
-            if (!$mobile) {
-                return new WP_REST_Response(['success' => false, 'message' => 'Mobile required'], 400);
-            }
-            global $wpdb;
-            $table = $wpdb->prefix . 'reader_mobiles';
-            $existing = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE mobile = %s", $mobile));
-            $update_data = ['updated_at' => current_time('mysql', 1)];
-            if (!empty($name)) $update_data['name'] = $name;
-            if (!empty($email)) $update_data['email'] = $email;
-            if ($existing) {
-                $wpdb->update($table, $update_data, ['mobile' => $mobile]);
-                $user = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE mobile = %s", $mobile));
-                return new WP_REST_Response(['success' => true, 'user' => $user, 'message' => 'Profile updated.']);
-            } else {
-                // Always require email for new mobile signups
-                if (empty($email)) {
-                    return new WP_REST_Response(['success' => false, 'message' => 'Email required for signup'], 400);
-                }
-                $wpdb->insert($table, [
-                    'mobile' => $mobile,
-                    'name' => $name,
-                    'email' => $email,
-                    'source' => 'mobile',
-                    'created_at' => current_time('mysql', 1),
-                    'updated_at' => current_time('mysql', 1)
-                ]);
-                $user = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE mobile = %s", $mobile));
-                return new WP_REST_Response(['success' => true, 'user' => $user, 'message' => 'Mobile registered.']);
-            }
-        },
-        'permission_callback' => '__return_true',
-    ));
-});
 
 // Google One Tap endpoint (signup/login) - also stores in custom table
 add_action('rest_api_init', function() {
@@ -103,52 +84,47 @@ add_action('rest_api_init', function() {
             $name = isset($params['name']) ? sanitize_text_field($params['name']) : '';
             $picture = isset($params['picture']) ? esc_url_raw($params['picture']) : '';
             $sub = isset($params['sub']) ? sanitize_text_field($params['sub']) : '';
-            if (!$email || !$sub) {
-                return new WP_REST_Response(['success' => false, 'message' => 'Email and sub required'], 400);
+            $mobile = isset($params['mobile']) ? sanitize_text_field($params['mobile']) : '';
+            if (!$email || !$name || !$mobile || !$sub) {
+                return new WP_REST_Response(['success' => false, 'message' => 'Email, name, mobile, and sub are required.'], 400);
             }
             $user = get_user_by('email', $email);
-            if (!$user) {
-                $random_password = wp_generate_password(12, false);
-                $user_id = wp_create_user($email, $random_password, $email);
-                if (is_wp_error($user_id)) {
-                    return new WP_REST_Response(['success' => false, 'message' => 'User creation failed'], 500);
-                }
-                $user = get_user_by('id', $user_id);
-                wp_update_user(['ID' => $user_id, 'display_name' => $name]);
-            } else {
-                $user_id = $user->ID;
-                if ($name) {
-                    wp_update_user(['ID' => $user_id, 'display_name' => $name]);
-                }
-            }
-            update_user_meta($user_id, 'google_sub', $sub);
-            update_user_meta($user_id, 'google_picture', $picture);
-
-            // Insert/update in custom table
             global $wpdb;
             $table = $wpdb->prefix . 'reader_mobiles';
             $existing = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE email = %s", $email));
-            $data = [
-                'email' => $email,
-                'name' => $name,
-                'source' => 'google',
-                'google_sub' => $sub,
-                'google_picture' => $picture,
-                'updated_at' => current_time('mysql', 1)
-            ];
             if ($existing) {
-                $wpdb->update($table, $data, ['email' => $email]);
+                return new WP_REST_Response(['success' => true, 'user' => $existing, 'message' => 'Profile exists.'], 200);
             } else {
-                $data['created_at'] = current_time('mysql', 1);
-                $wpdb->insert($table, $data);
+                // Create WP user if not exists
+                if (!$user) {
+                    $random_password = wp_generate_password(12, false);
+                    $user_id = wp_create_user($email, $random_password, $email);
+                    if (is_wp_error($user_id)) {
+                        return new WP_REST_Response(['success' => false, 'message' => 'User creation failed'], 500);
+                    }
+                    $user = get_user_by('id', $user_id);
+                    wp_update_user(['ID' => $user_id, 'display_name' => $name]);
+                } else {
+                    $user_id = $user->ID;
+                    if ($name) {
+                        wp_update_user(['ID' => $user_id, 'display_name' => $name]);
+                    }
+                }
+                update_user_meta($user_id, 'google_sub', $sub);
+                update_user_meta($user_id, 'google_picture', $picture);
+                $wpdb->insert($table, [
+                    'email' => $email,
+                    'name' => $name,
+                    'mobile' => $mobile,
+                    'source' => 'google',
+                    'google_sub' => $sub,
+                    'google_picture' => $picture,
+                    'created_at' => current_time('mysql', 1),
+                    'updated_at' => current_time('mysql', 1)
+                ]);
+                $user = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE email = %s", $email));
+                return new WP_REST_Response(['success' => true, 'user' => $user, 'message' => 'Google profile registered.']);
             }
-
-            return new WP_REST_Response(['success' => true, 'user' => [
-                'ID' => $user_id,
-                'email' => $email,
-                'display_name' => $name ?: $user->display_name,
-                'picture' => $picture
-            ]]);
         },
         'permission_callback' => '__return_true',
     ));
@@ -209,12 +185,10 @@ add_action('admin_menu', function() {
         }
         $rows = $wpdb->get_results("SELECT * FROM $table ORDER BY created_at DESC");
         echo '<div class="wrap"><h1>All Reader Users</h1>';
-        echo '<table class="widefat"><thead><tr><th>Source</th><th>ID</th><th>Mobile</th><th>Email</th><th>Name</th><th>Google Sub</th><th>Picture</th><th>Created</th><th>Updated</th><th>Delete</th></tr></thead><tbody>';
+        echo '<table class="widefat"><thead><tr><th>ID</th><th>Email</th><th>Name</th><th>Google Sub</th><th>Picture</th><th>Created</th><th>Updated</th><th>Delete</th></tr></thead><tbody>';
         foreach ($rows as $row) {
             echo '<tr>';
-            echo '<td>' . (isset($row->source) ? esc_html($row->source) : '') . '</td>';
             echo '<td>' . esc_html($row->id) . '</td>';
-            echo '<td>' . esc_html($row->mobile) . '</td>';
             echo '<td>' . esc_html($row->email) . '</td>';
             echo '<td>' . esc_html($row->name) . '</td>';
             echo '<td>' . (isset($row->google_sub) ? esc_html($row->google_sub) : '') . '</td>';
@@ -224,14 +198,10 @@ add_action('admin_menu', function() {
             echo '<td>' . esc_html($row->created_at) . '</td>';
             echo '<td>' . esc_html($row->updated_at) . '</td>';
             echo '<td>';
-            if (isset($row->source) && $row->source === 'mobile') {
-                echo '<a href="' . admin_url('admin.php?page=reader-users&delete_mobile=' . urlencode($row->mobile)) . '" onclick="return confirm(\'Delete this mobile user?\')" style="color:red;">Delete</a>';
-            } else {
-                // Find WP user by email for delete link
-                $user = get_user_by('email', $row->email);
-                if ($user) {
-                    echo '<a href="' . admin_url('admin.php?page=reader-users&delete_google=' . intval($user->ID)) . '" onclick="return confirm(\'Delete this Google user?\')" style="color:red;">Delete</a>';
-                }
+            // Find WP user by email for delete link
+            $user = get_user_by('email', $row->email);
+            if ($user) {
+                echo '<a href="' . admin_url('admin.php?page=reader-users&delete_google=' . intval($user->ID)) . '" onclick="return confirm(\'Delete this Google user?\')" style="color:red;">Delete</a>';
             }
             echo '</td>';
             echo '</tr>';
