@@ -26,6 +26,7 @@ export default function AccountPage() {
     }
   }, []);
   const [mobile, setMobile] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [userSignedIn, setUserSignedIn] = useState(false);
@@ -113,12 +114,16 @@ export default function AccountPage() {
       setMessage("Please enter a valid 10-digit mobile number.");
       return;
     }
+    if (!signupEmail || !/^\S+@\S+\.\S+$/.test(signupEmail)) {
+      setMessage("Please enter a valid email address.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('https://cms.paharipatrika.in/wp-json/reader/v1/save-mobile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile: '+91' + mobile })
+        body: JSON.stringify({ mobile: '+91' + mobile, email: signupEmail })
       });
       const data = await res.json();
       if (data && typeof data === 'object') {
@@ -480,6 +485,15 @@ export default function AccountPage() {
               }}
             />
           </div>
+          <input
+            type="email"
+            className="login-phone-input"
+            placeholder="Enter your email address"
+            required
+            style={{width: '100%', fontSize: '1.1rem', marginBottom: 12, padding: '12px 8px'}}
+            value={signupEmail}
+            onChange={e => setSignupEmail(e.target.value)}
+          />
           <button type="submit" className="login-continue-btn" disabled={loading} style={{width: '100%', fontSize: '1.1rem', padding: '12px 0', margin: '12px 0 0 0'}}>
             {loading ? 'Submitting...' : 'Continue'}
           </button>
