@@ -105,7 +105,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               }
               window.onGoogleOneTapLoad = function() {
                 if (window.google && window.google.accounts && window.google.accounts.id) {
-                  // Only show One Tap if not signed in
                   var user = getUserProfile();
                   if (user && user.email) return;
                   window.google.accounts.id.initialize({
@@ -113,15 +112,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     callback: function(response) {
                       const payload = parseJwt(response.credential);
                       if (payload && payload.email) {
-                        // Persist user info
                         setUserProfile({
                           email: payload.email,
                           name: payload.name,
                           picture: payload.picture,
                           sub: payload.sub
                         });
-                        // Send to backend
-                        fetch('/api/account/google-signup', {
+                        // Send to backend (WordPress)
+                        fetch('https://cms.paharipatrika.in/wp-json/reader/v1/google-login', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
@@ -131,9 +129,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                             picture: payload.picture
                           })
                         });
-                        // Hide One Tap
                         window.google.accounts.id.cancel();
-                        // Optionally, trigger a custom event for React hydration
                         window.dispatchEvent(new CustomEvent('pp-google-user', { detail: { user: payload } }));
                       }
                     },
