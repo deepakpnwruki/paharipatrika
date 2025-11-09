@@ -77,18 +77,65 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <FooterStatic />
         </footer>
         {/* Google One Tap global init */}
+        {/* Google One Tap global init and persistence */}
         <Script
-          id="google-one-tap-init"
+          id="google-one-tap-global"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
+              function parseJwt(token) {
+                try {
+                  return JSON.parse(atob(token.split('.')[1]));
+                } catch {
+                  return null;
+                }
+              }
+              function setUserProfile(profile) {
+                try {
+                  localStorage.setItem('pp_google_user', JSON.stringify(profile));
+                } catch {}
+              }
+              function getUserProfile() {
+                try {
+                  return JSON.parse(localStorage.getItem('pp_google_user'));
+                } catch { return null; }
+              }
+              function clearUserProfile() {
+                try { localStorage.removeItem('pp_google_user'); } catch {}
+              }
               window.onGoogleOneTapLoad = function() {
                 if (window.google && window.google.accounts && window.google.accounts.id) {
+                  // Only show One Tap if not signed in
+                  var user = getUserProfile();
+                  if (user && user.email) return;
                   window.google.accounts.id.initialize({
                     client_id: '995344648059-mcie9n87elmccoa4fb75tk8se87h1ft1.apps.googleusercontent.com',
                     callback: function(response) {
-                      // You can handle the credential here or dispatch a custom event
-                      window.dispatchEvent(new CustomEvent('google-one-tap-credential', { detail: response }));
+                      const payload = parseJwt(response.credential);
+                      if (payload && payload.email) {
+                        // Persist user info
+                        setUserProfile({
+                          email: payload.email,
+                          name: payload.name,
+                          picture: payload.picture,
+                          sub: payload.sub
+                        });
+                        // Send to backend
+                        fetch('/api/account/google-signup', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            email: payload.email,
+                            name: payload.name,
+                            sub: payload.sub,
+                            picture: payload.picture
+                          })
+                        });
+                        // Hide One Tap
+                        window.google.accounts.id.cancel();
+                        // Optionally, trigger a custom event for React hydration
+                        window.dispatchEvent(new CustomEvent('pp-google-user', { detail: { user: payload } }));
+                      }
                     },
                   });
                   window.google.accounts.id.prompt();
@@ -101,43 +148,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   setTimeout(window.onGoogleOneTapLoad, 500);
                 });
               }
-            `
-          }}
-        />
-        {/* Google One Tap credential handler: decode JWT and send email to backend */}
-        <Script
-          id="google-one-tap-handler"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.addEventListener('google-one-tap-credential', async function(e) {
-                const response = e.detail;
-                function parseJwt(token) {
-                  try {
-                    return JSON.parse(atob(token.split('.')[1]));
-                  } catch {
-                    return null;
-                  }
-                }
-                const payload = parseJwt(response.credential);
-                if (payload && payload.email) {
-                  try {
-                    await fetch('https://cms.paharipatrika.in/wp-json/reader/v1/signup-user', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        email: payload.email,
-                        name: payload.name,
-                        picture: payload.picture,
-                        sub: payload.sub
-                        // Add more fields if needed
-                      })
-                    });
-                  } catch (err) {
-                    // Optionally handle error
-                  }
-                }
-              });
             `
           }}
         />
